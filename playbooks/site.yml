@@ -1,0 +1,3 @@
+---
+- import_playbook: harden.yml
+- import_playbook: k3s.yml
