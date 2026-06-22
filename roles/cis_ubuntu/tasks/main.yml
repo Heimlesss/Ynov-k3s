@@ -4,17 +4,17 @@
 # ============================================================
 
 - name: "CIS 1 | Blacklister les filesystems inutiles"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/modprobe.d/cis-blacklist.conf
     line: "install {{ item }} /bin/true"
-    create: yes
+    create: true
   loop: "{{ unused_filesystems }}"
   when: disable_unused_filesystems
 
 # lineinfile  → modifie ou crée un fichier ligne par ligne
 # path        → le fichier à modifier
 # line        → la ligne à écrire
-# create: yes → crée le fichier s'il n'existe pas
+# create: true → crée le fichier s'il n'existe pas
 # loop        → répète la tâche pour chaque filesystem de la liste
 # when        → n'exécute la tâche que si disable_unused_filesystems est true
 # "install X /bin/true" → quand Linux essaie de charger le module X,
@@ -25,11 +25,11 @@
 # ============================================================
 
 - name: "CIS 2 | Configurer les options de montage de /tmp"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/fstab
     regexp: '^tmpfs\s+/tmp'
     line: "tmpfs /tmp tmpfs defaults,{{ tmp_partition_options }} 0 0"
-    create: yes
+    create: true
 
 # regexp → cherche une ligne existante qui correspond à ce pattern
 #          si trouvée, la remplace par "line"
@@ -41,11 +41,11 @@
 # ============================================================
 
 - name: "CIS 3 | Désactiver IPv6 via sysctl"
-  sysctl:
+  ansible.builtin.sysctl:
     name: "{{ item }}"
     value: "1"
     state: present
-    reload: yes
+    reload: true
   loop:
     - net.ipv6.conf.all.disable_ipv6
     - net.ipv6.conf.default.disable_ipv6
@@ -63,17 +63,17 @@
 # ============================================================
 
 - name: "CIS 4 | Installer OpenSSH server"
-  apt:
+  ansible.builtin.apt:
     name: openssh-server
     state: present
-    update_cache: yes
+    update_cache: true
 
 # apt          → gestion des paquets Debian/Ubuntu
 # state:present → s'assurer que le paquet est installé
 # update_cache → fait un apt update avant d'installer
 
 - name: "CIS 4 | Configurer le port SSH"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?Port'
     line: "Port {{ ssh_port }}"
@@ -84,35 +84,35 @@
 # Le handler redémarre SSH pour appliquer la nouvelle config
 
 - name: "CIS 4 | Interdire le login root en SSH"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?PermitRootLogin'
     line: "PermitRootLogin {{ ssh_permit_root_login }}"
   notify: restart sshd
 
 - name: "CIS 4 | Limiter les tentatives d'authentification"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?MaxAuthTries'
     line: "MaxAuthTries {{ ssh_max_auth_tries }}"
   notify: restart sshd
 
 - name: "CIS 4 | Configurer le timeout d'inactivité"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?ClientAliveInterval'
     line: "ClientAliveInterval {{ ssh_client_alive_interval }}"
   notify: restart sshd
 
 - name: "CIS 4 | Configurer le nombre de signaux keepalive"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?ClientAliveCountMax'
     line: "ClientAliveCountMax {{ ssh_client_alive_count_max }}"
   notify: restart sshd
 
 - name: "CIS 4 | Configurer le délai de grâce de connexion"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?LoginGraceTime'
     line: "LoginGraceTime {{ ssh_login_grace_time }}"
@@ -123,7 +123,7 @@
 # ============================================================
 
 - name: "CIS 5 | Déployer le message de bannière"
-  copy:
+  ansible.builtin.copy:
     content: "{{ banner_message }}"
     dest: /etc/issue.net
     owner: root
@@ -135,7 +135,7 @@
 # dest    → fichier de destination
 
 - name: "CIS 5 | Activer la bannière dans SSH"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?Banner'
     line: "Banner {{ ssh_banner }}"
@@ -146,14 +146,14 @@
 # ============================================================
 
 - name: "CIS 6 | Installer auditd"
-  apt:
+  ansible.builtin.apt:
     name:
       - auditd
       - audispd-plugins
     state: present
 
 - name: "CIS 6 | Configurer la taille max des logs d'audit"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/audit/auditd.conf
     regexp: '^max_log_file\s*='
     line: "max_log_file = {{ auditd_max_log_file }}"
@@ -161,7 +161,7 @@
   when: ansible_check_mode == false
 
 - name: "CIS 6 | Configurer l'action à la taille max"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/audit/auditd.conf
     regexp: '^max_log_file_action\s*='
     line: "max_log_file_action = {{ auditd_max_log_file_action }}"
@@ -170,25 +170,25 @@
 
 - name: "CIS 6 | Activer et démarrer auditd"
   when: ansible_check_mode == false
-  service:
+  ansible.builtin.service:
     name: auditd
     state: started
-    enabled: yes
+    enabled: true
 
 # service         → gestion des services systemd
 # state: started  → s'assurer que le service tourne
-# enabled: yes    → s'assurer qu'il démarre au boot
+# enabled: true    → s'assurer qu'il démarre au boot
 
 # ============================================================
 # SECTION 7 - Paramètres sysctl réseau
 # ============================================================
 
 - name: "CIS 7 | Appliquer les paramètres sysctl de sécurité réseau"
-  sysctl:
+  ansible.builtin.sysctl:
     name: "{{ item.key }}"
     value: "{{ item.value }}"
     state: present
-    reload: yes
+    reload: true
   loop: "{{ sysctl_settings | dict2items }}"
 
 # dict2items → convertit le dictionnaire sysctl_settings en liste
@@ -200,14 +200,14 @@
 # ============================================================
 
 - name: "CIS 8 | Désactiver et stopper les services inutiles"
-  service:
+  ansible.builtin.service:
     name: "{{ item }}"
     state: stopped
-    enabled: no
+    enabled: false
   loop: "{{ unnecessary_services }}"
-  ignore_errors: yes
+  failed_when: false
 
-# ignore_errors: yes → ne bloque pas si le service n'existe pas
+# failed_when: false → ne bloque pas si le service n'existe pas
 # Normal : tous ces services ne sont pas forcément installés
 
 # ============================================================
@@ -215,29 +215,29 @@
 # ============================================================
 
 - name: "CIS 9 | Installer UFW"
-  apt:
+  ansible.builtin.apt:
     name: ufw
     state: present
 
 - name: "CIS 9 | Politique par défaut - bloquer le trafic entrant"
-  ufw:
+  community.general.ufw:
     default: "{{ ufw_default_incoming }}"
     direction: incoming
 
 - name: "CIS 9 | Politique par défaut - autoriser le trafic sortant"
-  ufw:
+  community.general.ufw:
     default: "{{ ufw_default_outgoing }}"
     direction: outgoing
 
 - name: "CIS 9 | Ouvrir les ports autorisés"
-  ufw:
+  community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: tcp
   loop: "{{ ufw_allowed_ports }}"
 
 - name: "CIS 9 | Activer UFW"
-  ufw:
+  community.general.ufw:
     state: enabled
 
 # ============================================================
@@ -245,19 +245,19 @@
 # ============================================================
 
 - name: "CIS 10 | Configurer la durée de validité des mots de passe"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/login.defs
     regexp: '^PASS_MAX_DAYS'
     line: "PASS_MAX_DAYS {{ password_max_days }}"
 
 - name: "CIS 10 | Configurer la durée minimale des mots de passe"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/login.defs
     regexp: '^PASS_MIN_DAYS'
     line: "PASS_MIN_DAYS {{ password_min_days }}"
 
 - name: "CIS 10 | Configurer l'avertissement d'expiration"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/login.defs
     regexp: '^PASS_WARN_AGE'
     line: "PASS_WARN_AGE {{ password_warn_age }}"
@@ -270,7 +270,7 @@
 # ============================================================
 
 - name: "CIS 11 | Restreindre su au groupe sudo"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/pam.d/su
     regexp: '^#?auth\s+required\s+pam_wheel'
     line: "auth required pam_wheel.so use_uid group={{ su_restrict_group }}"
@@ -284,7 +284,7 @@
 # ============================================================
 
 - name: "CIS 12 | Appliquer les permissions sur les fichiers critiques"
-  file:
+  ansible.builtin.file:
     path: "{{ item.path }}"
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
@@ -299,18 +299,18 @@
 # ============================================================
 
 - name: "CIS 13 | Désactiver les core dumps via limits.conf"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/security/limits.conf
     line: "* hard core 0"
-    create: yes
+    create: true
   when: disable_core_dumps
 
 - name: "CIS 13 | Désactiver les core dumps via sysctl"
-  sysctl:
+  ansible.builtin.sysctl:
     name: fs.suid_dumpable
     value: "0"
     state: present
-    reload: yes
+    reload: true
   when: disable_core_dumps
 
 # Deux mécanismes complémentaires :
@@ -322,7 +322,7 @@
 # ============================================================
 
 - name: "CIS 14 | Installer AppArmor"
-  apt:
+  ansible.builtin.apt:
     name:
       - apparmor
       - apparmor-utils
@@ -330,16 +330,16 @@
   when: apparmor_enabled
 
 - name: "CIS 14 | Activer et démarrer AppArmor"
-  service:
+  ansible.builtin.service:
     name: apparmor
     state: started
-    enabled: yes
+    enabled: true
   when: apparmor_enabled
 
 - name: "CIS 14 | Mettre tous les profils en mode enforce"
-  command: aa-enforce /etc/apparmor.d/*
+  ansible.builtin.command: aa-enforce /etc/apparmor.d/*
   when: apparmor_enabled
-  ignore_errors: yes
+  failed_when: false
   changed_when: false
 
 # command      → exécute une commande shell
@@ -354,18 +354,18 @@
 # ============================================================
 
 - name: "CIS 15 | Installer logrotate"
-  apt:
+  ansible.builtin.apt:
     name: logrotate
     state: present
 
 - name: "CIS 15 | Configurer la politique de rotation des logs"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/logrotate.conf
     regexp: '^rotate'
     line: "rotate {{ logrotate_rotate }}"
 
 - name: "CIS 15 | Configurer la fréquence de rotation"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/logrotate.conf
     regexp: '^(daily|weekly|monthly)'
     line: "{{ logrotate_frequency }}"
