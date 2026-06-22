@@ -1,3 +1,6 @@
 ---
-- import_playbook: harden.yml
-- import_playbook: k3s.yml
+- name: "Import hardening playbook"
+  ansible.builtin.import_playbook: harden.yml
+
+- name: "Import k3s playbook"
+  ansible.builtin.import_playbook: k3s.yml

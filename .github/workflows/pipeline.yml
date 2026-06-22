@@ -1,7 +1,6 @@
 ---
 name: DevSecOps Pipeline
 
-# Déclenché à chaque push sur toutes les branches
 on:
   push:
     branches:
@@ -11,37 +10,24 @@ on:
       - main
 
 jobs:
-  # ============================================================
-  # JOB 1 - ansible-lint
-  # Vérifie la syntaxe et les bonnes pratiques des playbooks
-  # ============================================================
   ansible-lint:
     name: Ansible Lint
     runs-on: ubuntu-latest
-    # runs-on → type de runner GitHub Actions
-    # ubuntu-latest → VM Ubuntu gratuite fournie par GitHub
-
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
-        # checkout → clone ton repo sur le runner GitHub
 
-      - name: Installer ansible-lint
-        run: pip install ansible-lint
+      - name: Installer ansible et collections
+        run: |
+          pip install ansible ansible-lint
+          ansible-galaxy collection install ansible.posix community.general
 
       - name: Lancer ansible-lint
         run: ansible-lint playbooks/ roles/
-        # analyse tous les playbooks et rôles
-        # échoue si erreur de syntaxe ou mauvaise pratique détectée
 
-  # ============================================================
-  # JOB 2 - Bandit (SAST Python)
-  # Analyse le code Python de l'app Flask
-  # ============================================================
   bandit:
     name: Bandit SAST
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -51,18 +37,10 @@ jobs:
 
       - name: Lancer Bandit
         run: bandit -r app/ -ll
-        # -r app/  → analyse récursivement le dossier app/
-        # -ll      → remonte uniquement les failles MEDIUM et HIGH
-        #            exit-code 1 si faille trouvée → pipeline bloquée
 
-  # ============================================================
-  # JOB 3 - Semgrep (SAST multi-langage)
-  # Analyse le code Python, YAML, Dockerfile
-  # ============================================================
   semgrep:
     name: Semgrep SAST
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -74,25 +52,16 @@ jobs:
             p/python
             p/dockerfile
             p/ansible
-        # p/python     → règles de sécurité Python
-        # p/dockerfile → règles de sécurité Dockerfile
-        # p/ansible    → règles de sécurité Ansible
-        # exit-code 1 si faille trouvée → pipeline bloquée
 
-  # ============================================================
-  # JOB 4 - Trivy (scan CVE image Docker)
-  # ============================================================
   trivy:
     name: Trivy CVE Scan
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
 
       - name: Builder l'image Docker
         run: docker build -t ynov-k3s-app:latest app/
-        # construit l'image depuis app/Dockerfile
 
       - name: Lancer Trivy
         uses: aquasecurity/trivy-action@master
@@ -101,20 +70,11 @@ jobs:
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
-          # exit-code: 1  → bloque la pipeline si CVE trouvée
-          # severity      → uniquement HIGH et CRITICAL bloquent
-          # LOW et MEDIUM → signalés mais ne bloquent pas
 
-  # ============================================================
-  # JOB 5 - Deploy (si tous les jobs précédents sont verts)
-  # ============================================================
   deploy:
     name: Deploy via Ansible
     runs-on: ubuntu-latest
     needs: [ansible-lint, bandit, semgrep, trivy]
-    # needs → attend que les 4 jobs précédents soient verts
-    # si un seul échoue → deploy ne s'exécute pas
-
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -125,9 +85,6 @@ jobs:
           echo "${{ secrets.VM1_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Installer Ansible sur le runner
-        run: pip install ansible
 
       - name: Git pull sur VM1
         run: |

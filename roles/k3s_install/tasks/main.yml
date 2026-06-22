@@ -1,34 +1,30 @@
 ---
-# ============================================================
-# Installation de k3s
-# ============================================================
-
 - name: "K3s | Vérifier si k3s est déjà installé"
   ansible.builtin.stat:
     path: /usr/local/bin/k3s
-  register: k3s_binary
+  register: k3s_install_binary
 
 - name: "K3s | Télécharger le script d'installation"
   ansible.builtin.get_url:
     url: "{{ k3s_install_url }}"
     dest: /tmp/k3s-install.sh
     mode: "0755"
-  when: not k3s_binary.stat.exists
+  when: not k3s_install_binary.stat.exists
 
 - name: "K3s | Installer k3s"
   ansible.builtin.command: /tmp/k3s-install.sh
   environment:
-    INSTALL_K3S_VERSION: "{{ k3s_version }}"
-    INSTALL_K3S_EXEC: "{{ k3s_server_args }}"
-  when: not k3s_binary.stat.exists
+    INSTALL_K3S_VERSION: "{{ k3s_install_version }}"
+    INSTALL_K3S_EXEC: "{{ k3s_install_server_args }}"
+  when: not k3s_install_binary.stat.exists
   changed_when: true
 
 - name: "K3s | Attendre que l'API k3s soit disponible"
   ansible.builtin.wait_for:
-    port: "{{ k3s_api_port }}"
+    port: "{{ k3s_install_api_port }}"
     host: localhost
     timeout: 60
-  when: not k3s_binary.stat.exists
+  when: not k3s_install_binary.stat.exists
 
 - name: "K3s | Vérifier que le service k3s tourne"
   ansible.builtin.service:
@@ -38,7 +34,7 @@
 
 - name: "K3s | Récupérer le fichier kubeconfig"
   ansible.builtin.fetch:
-    src: /etc/rancher/k3s/k3s.yaml
+    src: "{{ k3s_install_config_dir }}/k3s.yaml"
     dest: ~/.kube/config
     flat: true
   failed_when: false

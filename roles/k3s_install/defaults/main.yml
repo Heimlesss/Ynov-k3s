@@ -1,17 +1,6 @@
 ---
-# Version de k3s à installer
-k3s_version: "v1.29.3+k3s1"
-
-# URL du script d'installation officiel
+k3s_install_version: "v1.29.3+k3s1"
 k3s_install_url: "https://get.k3s.io"
-
-# Options d'installation
-k3s_server_args: "--disable traefik"
-# --disable traefik → on désactive l'ingress controller par défaut
-#                     on n'en a pas besoin pour ce TP
-
-# Répertoire de config kubectl
-k3s_config_dir: "/etc/rancher/k3s"
-
-# Port de l'API k3s
-k3s_api_port: 6443
+k3s_install_server_args: "--disable traefik"
+k3s_install_config_dir: "/etc/rancher/k3s"
+k3s_install_api_port: 6443

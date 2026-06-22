@@ -4,236 +4,288 @@
 # Blackliste les modules noyau inutiles pour réduire la surface d'attaque
 # ============================================================
 
-disable_unused_filesystems: true
-# Interrupteur général - si false, toute la section est ignorée
-
-unused_filesystems:
-  - cramfs      # Format de filesystem compressé ancien, inutile sur un serveur
-  - freevxfs    # Filesystem Veritas, inutile sur Ubuntu
-  - jffs2       # Filesystem pour mémoire flash embarquée, inutile sur serveur
-  - hfs         # Filesystem Apple HFS, inutile sur Linux serveur
-  - hfsplus     # Filesystem Apple HFS+, inutile sur Linux serveur
-  - squashfs    # Filesystem compressé read-only (utilisé par snap, on le bloque)
-  - udf         # Filesystem DVD/Blu-ray, inutile sur serveur
-# Ces modules noyau seront blacklistés - ils ne pourront plus être chargés
-# Moins de modules = moins de surface d'attaque
+cis_ubuntu_disable_unused_filesystems: true
+cis_ubuntu_unused_filesystems:
+  - cramfs
+  - freevxfs
+  - jffs2
+  - hfs
+  - hfsplus
+  - squashfs
+  - udf
 
 # ============================================================
 # SECTION 2 - Partition /tmp
-# Restreint les actions possibles dans le répertoire temporaire
 # ============================================================
 
-tmp_partition_options: "nodev,nosuid,noexec"
-# nodev    → interdit la création de fichiers spéciaux (périphériques) dans /tmp
-# nosuid   → interdit les binaires avec le bit SUID dans /tmp
-#            (un binaire SUID s'exécute avec les droits de son propriétaire,
-#            souvent root - très dangereux dans /tmp)
-# noexec   → interdit l'exécution de programmes depuis /tmp
-#            (bloque les attaques qui déposent un script malveillant dans /tmp)
+cis_ubuntu_tmp_partition_options: "nodev,nosuid,noexec"
 
 # ============================================================
 # SECTION 3 - Réseau
-# Désactive IPv6 si non utilisé pour réduire la surface d'attaque réseau
 # ============================================================
 
-disable_ipv6: true
-# IPv6 est activé par défaut sur Ubuntu même si tu ne l'utilises pas
-# Le désactiver réduit la surface d'attaque réseau
+cis_ubuntu_disable_ipv6: true
 
 # ============================================================
 # SECTION 4 - Configuration SSH
-# Durcit le service SSH contre les accès non autorisés
 # ============================================================
 
-ssh_port: 22
-# Port d'écoute SSH - on garde le standard mais il pourrait être changé
-
-ssh_permit_root_login: "no"
-# Interdit la connexion SSH directe en root
-# On se connecte avec un user normal puis sudo
-
-ssh_max_auth_tries: 4
-# Nombre maximum de tentatives d'authentification par connexion
-# Après 4 échecs, la connexion est coupée
-
-ssh_client_alive_interval: 300
-# Envoie un signal "es-tu vivant ?" toutes les 300 secondes (5 minutes)
-# si aucune activité détectée
-
-ssh_client_alive_count_max: 0
-# Nombre de signaux sans réponse avant déconnexion
-# 0 = déconnexion immédiate si pas de réponse au premier signal
-# Combiné avec interval : déconnexion après 5 minutes d'inactivité
-
-ssh_login_grace_time: 60
-# Temps en secondes pour s'authentifier après ouverture de connexion
-# Si pas authentifié en 60s, connexion coupée
-# Limite les attaques qui maintiennent des connexions ouvertes
+cis_ubuntu_ssh_port: 22
+cis_ubuntu_ssh_permit_root_login: "no"
+cis_ubuntu_ssh_max_auth_tries: 4
+cis_ubuntu_ssh_client_alive_interval: 300
+cis_ubuntu_ssh_client_alive_count_max: 0
+cis_ubuntu_ssh_login_grace_time: 60
 
 # ============================================================
 # SECTION 5 - Bannière SSH
-# Affiche un message juridique avant toute connexion
 # ============================================================
 
-ssh_banner: "/etc/issue.net"
-# Fichier qui contient le message affiché AVANT la connexion SSH
-# /etc/issue.net est le fichier standard Linux pour ça
-
-banner_message: |
+cis_ubuntu_ssh_banner: "/etc/issue.net"
+cis_ubuntu_banner_message: |
   Authorized access only. All activity may be monitored and reported.
-# Le message affiché - prévient l'utilisateur que ses actions sont surveillées
 
 # ============================================================
 # SECTION 6 - Auditd
-# Journalise les événements système pour la traçabilité
 # ============================================================
 
-auditd_max_log_file: 8
-# Taille maximale d'un fichier de log d'audit en Mo
-# Au delà de 8Mo, l'action définie ci-dessous est déclenchée
-
-auditd_max_log_file_action: "keep_logs"
-# Action quand la taille max est atteinte
-# keep_logs = on garde tous les logs et on crée un nouveau fichier
+cis_ubuntu_auditd_max_log_file: 8
+cis_ubuntu_auditd_max_log_file_action: "keep_logs"
 
 # ============================================================
-# SECTION 7 - Paramètres noyau réseau (sysctl)
-# Durcit la pile réseau du noyau contre les attaques courantes
+# SECTION 7 - Sysctl
 # ============================================================
 
-sysctl_settings:
+cis_ubuntu_sysctl_settings:
   net.ipv4.ip_forward: 0
-  # Désactive le routage de paquets entre interfaces
-  # Un serveur n'est pas un routeur - on bloque cette fonction
-
   net.ipv4.conf.all.send_redirects: 0
-  # Interdit l'envoi de messages ICMP Redirect sur toutes les interfaces
-  # Les redirects ICMP peuvent être utilisés pour détourner le trafic (MITM)
-
   net.ipv4.conf.default.send_redirects: 0
-  # Même chose pour les nouvelles interfaces créées après démarrage
-
   net.ipv4.conf.all.accept_redirects: 0
-  # Refuse les messages ICMP Redirect entrants
-  # Protège contre les attaques de type Man-In-The-Middle
-
   net.ipv4.conf.all.log_martians: 1
-  # Active la journalisation des paquets avec des adresses source impossibles
-  # (adresses "martiennes" = adresses qui ne devraient pas exister sur internet)
-  # Utile pour détecter du spoofing d'adresse IP
-
   net.ipv4.tcp_syncookies: 1
-  # Active les SYN cookies - protection contre les attaques SYN flood (DDoS)
 
 # ============================================================
 # SECTION 8 - Services inutiles
-# Désactive les services non nécessaires pour réduire la surface d'attaque
 # ============================================================
 
-unnecessary_services:
-  - avahi-daemon    # Découverte réseau mDNS/Bonjour - inutile sur serveur
-  - cups            # Service d'impression - inutile sur serveur
-  - isc-dhcp-server # Serveur DHCP - on n'est pas un serveur DHCP
-  - slapd           # Serveur LDAP - on n'est pas un contrôleur d'annuaire
-  - nfs-server      # Partage NFS - inutile si pas de partage fichiers Linux
-  - rpcbind         # Remote Procedure Call - dépendance NFS, inutile
-  - bind9           # Serveur DNS - on n'est pas un serveur DNS
-  - vsftpd          # Serveur FTP - protocole non sécurisé, inutile
-  - apache2         # Serveur web Apache - on n'en a pas besoin ici
-  - dovecot         # Serveur mail IMAP/POP3 - on n'est pas un serveur mail
-  - smbd            # Partage Samba/SMB - on n'est pas un serveur de fichiers
-  - squid           # Proxy HTTP - inutile sur ce serveur
-  - snmpd           # Agent SNMP - désactivé par défaut sur serveur sécurisé
-# Chaque service inutile = une porte potentielle pour un attaquant
+cis_ubuntu_unnecessary_services:
+  - avahi-daemon
+  - cups
+  - isc-dhcp-server
+  - slapd
+  - nfs-server
+  - rpcbind
+  - bind9
+  - vsftpd
+  - apache2
+  - dovecot
+  - smbd
+  - squid
+  - snmpd
 
 # ============================================================
-# SECTION 9 - Pare-feu UFW
-# Configure le pare-feu avec une politique de refus par défaut
+# SECTION 9 - Firewall UFW
 # ============================================================
 
-ufw_default_incoming: "deny"
-# Bloque TOUT le trafic entrant par défaut
-# Principe du moindre privilège : on bloque tout, on ouvre uniquement ce qu'on autorise
-
-ufw_default_outgoing: "allow"
-# Autorise tout le trafic sortant par défaut
-
-ufw_allowed_ports:
-  - 22      # SSH - pour pouvoir se connecter à la machine
-  - 6443    # API k3s - port de l'API Kubernetes, nécessaire pour k3s
+cis_ubuntu_ufw_default_incoming: "deny"
+cis_ubuntu_ufw_default_outgoing: "allow"
+cis_ubuntu_ufw_allowed_ports:
+  - 22
+  - 6443
 
 # ============================================================
 # SECTION 10 - Politique de mots de passe
-# Définit les règles d'expiration et de renouvellement des mots de passe
 # ============================================================
 
-password_max_days: 365
-# Durée de validité maximale d'un mot de passe en jours
-
-password_min_days: 1
-# Durée minimale avant de pouvoir changer son mot de passe
-# Empêche un utilisateur de changer 10 fois de suite pour revenir à l'ancien
-
-password_warn_age: 7
-# Nombre de jours avant expiration où l'utilisateur est averti
+cis_ubuntu_password_max_days: 365
+cis_ubuntu_password_min_days: 1
+cis_ubuntu_password_warn_age: 7
 
 # ============================================================
-# SECTION 11 - Restriction de la commande su
-# Limite l'utilisation de su aux membres du groupe sudo uniquement
+# SECTION 11 - Restriction su
 # ============================================================
 
-su_restrict_group: "sudo"
-# su permet de devenir un autre utilisateur, notamment root
-# Sans cette restriction, n'importe quel user peut tenter su root
+cis_ubuntu_su_restrict_group: "sudo"
 
 # ============================================================
-# SECTION 12 - Permissions des fichiers critiques
-# Applique les permissions minimales sur les fichiers système sensibles
+# SECTION 12 - Permissions fichiers critiques
 # ============================================================
 
-critical_files:
-  - path: /etc/passwd       # Base de données des utilisateurs
+cis_ubuntu_critical_files:
+  - path: /etc/passwd
     owner: root
     group: root
-    mode: "0644"            # Lecture pour tous, écriture root seulement
-
-  - path: /etc/shadow       # Mots de passe hashés - fichier ultra sensible
+    mode: "0644"
+  - path: /etc/shadow
     owner: root
-    group: shadow           # Seuls root et le groupe shadow peuvent lire
-    mode: "0640"            # Lecture root+shadow seulement, personne d'autre
-
-  - path: /etc/group        # Base de données des groupes
+    group: shadow
+    mode: "0640"
+  - path: /etc/group
     owner: root
     group: root
-    mode: "0644"            # Lecture pour tous, écriture root seulement
+    mode: "0644"
 
 # ============================================================
 # SECTION 13 - Core dumps
-# Désactive les vidages mémoire pour éviter les fuites de données sensibles
 # ============================================================
 
-disable_core_dumps: true
-# Un core dump = fichier créé quand un programme plante, contient la mémoire RAM
-# Peut contenir des mots de passe, clés, données sensibles en clair
+cis_ubuntu_disable_core_dumps: true
 
 # ============================================================
 # SECTION 14 - AppArmor
-# Active le contrôle d'accès obligatoire par profil d'application
 # ============================================================
 
-apparmor_enabled: true
-# AppArmor = système MAC intégré à Ubuntu
-# Chaque application a un profil qui définit exactement ce qu'elle peut faire
-# et quelles ressources elle peut accéder
+cis_ubuntu_apparmor_enabled: true
 
 # ============================================================
-# SECTION 15 - Rotation des logs
-# Gère la rétention et l'archivage automatique des fichiers de log
+# SECTION 15 - Logrotate
 # ============================================================
 
-logrotate_rotate: 4
-# Nombre de fichiers de log archivés à conserver
-# Au delà de 4 archives, les plus anciens sont supprimés
+cis_ubuntu_logrotate_rotate: 4
+cis_ubuntu_logrotate_frequency: "weekly"
+EOFcat > roles/cis_ubuntu/defaults/main.yml << 'EOF'
+---
+# ============================================================
+# SECTION 1 - Filesystems inutiles
+# Blackliste les modules noyau inutiles pour réduire la surface d'attaque
+# ============================================================
 
-logrotate_frequency: "weekly"
-# Fréquence de rotation : les logs sont archivés chaque semaine
+cis_ubuntu_disable_unused_filesystems: true
+cis_ubuntu_unused_filesystems:
+  - cramfs
+  - freevxfs
+  - jffs2
+  - hfs
+  - hfsplus
+  - squashfs
+  - udf
+
+# ============================================================
+# SECTION 2 - Partition /tmp
+# ============================================================
+
+cis_ubuntu_tmp_partition_options: "nodev,nosuid,noexec"
+
+# ============================================================
+# SECTION 3 - Réseau
+# ============================================================
+
+cis_ubuntu_disable_ipv6: true
+
+# ============================================================
+# SECTION 4 - Configuration SSH
+# ============================================================
+
+cis_ubuntu_ssh_port: 22
+cis_ubuntu_ssh_permit_root_login: "no"
+cis_ubuntu_ssh_max_auth_tries: 4
+cis_ubuntu_ssh_client_alive_interval: 300
+cis_ubuntu_ssh_client_alive_count_max: 0
+cis_ubuntu_ssh_login_grace_time: 60
+
+# ============================================================
+# SECTION 5 - Bannière SSH
+# ============================================================
+
+cis_ubuntu_ssh_banner: "/etc/issue.net"
+cis_ubuntu_banner_message: |
+  Authorized access only. All activity may be monitored and reported.
+
+# ============================================================
+# SECTION 6 - Auditd
+# ============================================================
+
+cis_ubuntu_auditd_max_log_file: 8
+cis_ubuntu_auditd_max_log_file_action: "keep_logs"
+
+# ============================================================
+# SECTION 7 - Sysctl
+# ============================================================
+
+cis_ubuntu_sysctl_settings:
+  net.ipv4.ip_forward: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.all.log_martians: 1
+  net.ipv4.tcp_syncookies: 1
+
+# ============================================================
+# SECTION 8 - Services inutiles
+# ============================================================
+
+cis_ubuntu_unnecessary_services:
+  - avahi-daemon
+  - cups
+  - isc-dhcp-server
+  - slapd
+  - nfs-server
+  - rpcbind
+  - bind9
+  - vsftpd
+  - apache2
+  - dovecot
+  - smbd
+  - squid
+  - snmpd
+
+# ============================================================
+# SECTION 9 - Firewall UFW
+# ============================================================
+
+cis_ubuntu_ufw_default_incoming: "deny"
+cis_ubuntu_ufw_default_outgoing: "allow"
+cis_ubuntu_ufw_allowed_ports:
+  - 22
+  - 6443
+
+# ============================================================
+# SECTION 10 - Politique de mots de passe
+# ============================================================
+
+cis_ubuntu_password_max_days: 365
+cis_ubuntu_password_min_days: 1
+cis_ubuntu_password_warn_age: 7
+
+# ============================================================
+# SECTION 11 - Restriction su
+# ============================================================
+
+cis_ubuntu_su_restrict_group: "sudo"
+
+# ============================================================
+# SECTION 12 - Permissions fichiers critiques
+# ============================================================
+
+cis_ubuntu_critical_files:
+  - path: /etc/passwd
+    owner: root
+    group: root
+    mode: "0644"
+  - path: /etc/shadow
+    owner: root
+    group: shadow
+    mode: "0640"
+  - path: /etc/group
+    owner: root
+    group: root
+    mode: "0644"
+
+# ============================================================
+# SECTION 13 - Core dumps
+# ============================================================
+
+cis_ubuntu_disable_core_dumps: true
+
+# ============================================================
+# SECTION 14 - AppArmor
+# ============================================================
+
+cis_ubuntu_apparmor_enabled: true
+
+# ============================================================
+# SECTION 15 - Logrotate
+# ============================================================
+
+cis_ubuntu_logrotate_rotate: 4
+cis_ubuntu_logrotate_frequency: "weekly"
