@@ -1,0 +1,7 @@
+---
+- name: Install k3s on target node
+  hosts: targets
+  become: true
+
+  roles:
+    - k3s_install

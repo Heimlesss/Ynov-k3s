@@ -1,0 +1,7 @@
+---
+- name: CIS L1 Hardening Ubuntu 24.04
+  hosts: targets
+  become: true
+
+  roles:
+    - cis_ubuntu
