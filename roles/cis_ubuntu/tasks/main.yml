@@ -169,6 +169,7 @@
   when: ansible_check_mode == false
 
 - name: "CIS 6 | Activer et démarrer auditd"
+  when: ansible_check_mode == false
   service:
     name: auditd
     state: started
