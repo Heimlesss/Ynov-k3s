@@ -3,289 +3,167 @@
 # SECTION 1 - Filesystems inutiles
 # Blackliste les modules noyau inutiles pour réduire la surface d'attaque
 # ============================================================
-
 cis_ubuntu_disable_unused_filesystems: true
 cis_ubuntu_unused_filesystems:
-  - cramfs
-  - freevxfs
-  - jffs2
-  - hfs
-  - hfsplus
-  - squashfs
-  - udf
+  - cramfs      # Format de filesystem compressé ancien, inutile sur un serveur
+  - freevxfs    # Filesystem Veritas, inutile sur Ubuntu
+  - jffs2       # Filesystem pour mémoire flash embarquée, inutile sur serveur
+  - hfs         # Filesystem Apple HFS, inutile sur Linux serveur
+  - hfsplus     # Filesystem Apple HFS+, inutile sur Linux serveur
+  - squashfs    # Filesystem compressé read-only (utilisé par snap, on le bloque)
+  - udf         # Filesystem DVD/Blu-ray, inutile sur serveur
 
 # ============================================================
 # SECTION 2 - Partition /tmp
+# Restreint les actions possibles dans le répertoire temporaire
 # ============================================================
-
 cis_ubuntu_tmp_partition_options: "nodev,nosuid,noexec"
+# nodev  → interdit la création de fichiers spéciaux dans /tmp
+# nosuid → interdit les binaires avec le bit SUID dans /tmp
+# noexec → interdit l'exécution de programmes depuis /tmp
 
 # ============================================================
 # SECTION 3 - Réseau
+# Désactive IPv6 si non utilisé pour réduire la surface d'attaque réseau
 # ============================================================
-
 cis_ubuntu_disable_ipv6: true
 
 # ============================================================
 # SECTION 4 - Configuration SSH
+# Durcit le service SSH contre les accès non autorisés
 # ============================================================
-
 cis_ubuntu_ssh_port: 22
 cis_ubuntu_ssh_permit_root_login: "no"
+# Interdit la connexion SSH directe en root
 cis_ubuntu_ssh_max_auth_tries: 4
+# Nombre maximum de tentatives avant coupure de connexion
 cis_ubuntu_ssh_client_alive_interval: 300
+# Signal keepalive toutes les 5 minutes si inactif
 cis_ubuntu_ssh_client_alive_count_max: 0
+# Déconnexion immédiate si pas de réponse au keepalive
 cis_ubuntu_ssh_login_grace_time: 60
+# Temps max pour s'authentifier après connexion
 
 # ============================================================
 # SECTION 5 - Bannière SSH
+# Affiche un message juridique avant toute connexion
 # ============================================================
-
 cis_ubuntu_ssh_banner: "/etc/issue.net"
-cis_ubuntu_banner_message: |
-  Authorized access only. All activity may be monitored and reported.
+cis_ubuntu_banner_message: "Authorized access only. All activity may be monitored and reported.\n"
 
 # ============================================================
 # SECTION 6 - Auditd
+# Journalise les événements système pour la traçabilité
 # ============================================================
-
 cis_ubuntu_auditd_max_log_file: 8
+# Taille maximale d'un fichier de log d'audit en Mo
 cis_ubuntu_auditd_max_log_file_action: "keep_logs"
+# Action quand la taille max est atteinte - on garde tous les logs
 
 # ============================================================
-# SECTION 7 - Sysctl
+# SECTION 7 - Paramètres noyau réseau (sysctl)
+# Durcit la pile réseau du noyau contre les attaques courantes
 # ============================================================
-
 cis_ubuntu_sysctl_settings:
   net.ipv4.ip_forward: 0
+  # Désactive le routage de paquets - un serveur n'est pas un routeur
   net.ipv4.conf.all.send_redirects: 0
+  # Interdit l'envoi de messages ICMP Redirect (risque MITM)
   net.ipv4.conf.default.send_redirects: 0
+  # Même chose pour les nouvelles interfaces
   net.ipv4.conf.all.accept_redirects: 0
+  # Refuse les ICMP Redirect entrants
   net.ipv4.conf.all.log_martians: 1
+  # Journalise les paquets avec adresses source impossibles (anti-spoofing)
   net.ipv4.tcp_syncookies: 1
+  # Protection contre les attaques SYN flood (DDoS)
 
 # ============================================================
 # SECTION 8 - Services inutiles
+# Désactive les services non nécessaires pour réduire la surface d'attaque
 # ============================================================
-
 cis_ubuntu_unnecessary_services:
-  - avahi-daemon
-  - cups
-  - isc-dhcp-server
-  - slapd
-  - nfs-server
-  - rpcbind
-  - bind9
-  - vsftpd
-  - apache2
-  - dovecot
-  - smbd
-  - squid
-  - snmpd
+  - avahi-daemon    # Découverte réseau mDNS/Bonjour - inutile sur serveur
+  - cups            # Service d'impression - inutile sur serveur
+  - isc-dhcp-server # Serveur DHCP - on n'est pas un serveur DHCP
+  - slapd           # Serveur LDAP - on n'est pas un contrôleur d'annuaire
+  - nfs-server      # Partage NFS - inutile si pas de partage fichiers Linux
+  - rpcbind         # Remote Procedure Call - dépendance NFS, inutile
+  - bind9           # Serveur DNS - on n'est pas un serveur DNS
+  - vsftpd          # Serveur FTP - protocole non sécurisé, inutile
+  - apache2         # Serveur web Apache - on n'en a pas besoin ici
+  - dovecot         # Serveur mail IMAP/POP3 - on n'est pas un serveur mail
+  - smbd            # Partage Samba/SMB - on n'est pas un serveur de fichiers
+  - squid           # Proxy HTTP - inutile sur ce serveur
+  - snmpd           # Agent SNMP - désactivé par défaut sur serveur sécurisé
 
 # ============================================================
-# SECTION 9 - Firewall UFW
+# SECTION 9 - Pare-feu UFW
+# Configure le pare-feu avec une politique de refus par défaut
 # ============================================================
-
 cis_ubuntu_ufw_default_incoming: "deny"
+# Bloque TOUT le trafic entrant par défaut
 cis_ubuntu_ufw_default_outgoing: "allow"
+# Autorise tout le trafic sortant par défaut
 cis_ubuntu_ufw_allowed_ports:
-  - 22
-  - 6443
+  - 22      # SSH
+  - 6443    # API k3s
 
 # ============================================================
 # SECTION 10 - Politique de mots de passe
+# Définit les règles d'expiration et de renouvellement
 # ============================================================
-
 cis_ubuntu_password_max_days: 365
+# Durée de validité maximale d'un mot de passe en jours
 cis_ubuntu_password_min_days: 1
+# Durée minimale avant de pouvoir changer son mot de passe
 cis_ubuntu_password_warn_age: 7
+# Nombre de jours avant expiration où l'utilisateur est averti
 
 # ============================================================
-# SECTION 11 - Restriction su
+# SECTION 11 - Restriction de la commande su
+# Limite l'utilisation de su aux membres du groupe sudo uniquement
 # ============================================================
-
 cis_ubuntu_su_restrict_group: "sudo"
+# Sans cette restriction, n'importe quel user peut tenter su root
 
 # ============================================================
-# SECTION 12 - Permissions fichiers critiques
+# SECTION 12 - Permissions des fichiers critiques
+# Applique les permissions minimales sur les fichiers système sensibles
 # ============================================================
-
 cis_ubuntu_critical_files:
-  - path: /etc/passwd
+  - path: /etc/passwd       # Base de données des utilisateurs
     owner: root
     group: root
-    mode: "0644"
-  - path: /etc/shadow
+    mode: "0644"            # Lecture pour tous, écriture root seulement
+  - path: /etc/shadow       # Mots de passe hashés - fichier ultra sensible
     owner: root
     group: shadow
-    mode: "0640"
-  - path: /etc/group
+    mode: "0640"            # Lecture root+shadow seulement
+  - path: /etc/group        # Base de données des groupes
     owner: root
     group: root
     mode: "0644"
 
 # ============================================================
 # SECTION 13 - Core dumps
+# Désactive les vidages mémoire pour éviter les fuites de données sensibles
 # ============================================================
-
 cis_ubuntu_disable_core_dumps: true
+# Un core dump peut contenir des mots de passe et clés en clair
 
 # ============================================================
 # SECTION 14 - AppArmor
+# Active le contrôle d'accès obligatoire par profil d'application
 # ============================================================
-
 cis_ubuntu_apparmor_enabled: true
+# Chaque application a un profil qui définit exactement ce qu'elle peut faire
 
 # ============================================================
 # SECTION 15 - Logrotate
+# Gère la rétention et l'archivage automatique des fichiers de log
 # ============================================================
-
 cis_ubuntu_logrotate_rotate: 4
+# Nombre de fichiers de log archivés à conserver
 cis_ubuntu_logrotate_frequency: "weekly"
-EOFcat > roles/cis_ubuntu/defaults/main.yml << 'EOF'
----
-# ============================================================
-# SECTION 1 - Filesystems inutiles
-# Blackliste les modules noyau inutiles pour réduire la surface d'attaque
-# ============================================================
-
-cis_ubuntu_disable_unused_filesystems: true
-cis_ubuntu_unused_filesystems:
-  - cramfs
-  - freevxfs
-  - jffs2
-  - hfs
-  - hfsplus
-  - squashfs
-  - udf
-
-# ============================================================
-# SECTION 2 - Partition /tmp
-# ============================================================
-
-cis_ubuntu_tmp_partition_options: "nodev,nosuid,noexec"
-
-# ============================================================
-# SECTION 3 - Réseau
-# ============================================================
-
-cis_ubuntu_disable_ipv6: true
-
-# ============================================================
-# SECTION 4 - Configuration SSH
-# ============================================================
-
-cis_ubuntu_ssh_port: 22
-cis_ubuntu_ssh_permit_root_login: "no"
-cis_ubuntu_ssh_max_auth_tries: 4
-cis_ubuntu_ssh_client_alive_interval: 300
-cis_ubuntu_ssh_client_alive_count_max: 0
-cis_ubuntu_ssh_login_grace_time: 60
-
-# ============================================================
-# SECTION 5 - Bannière SSH
-# ============================================================
-
-cis_ubuntu_ssh_banner: "/etc/issue.net"
-cis_ubuntu_banner_message: |
-  Authorized access only. All activity may be monitored and reported.
-
-# ============================================================
-# SECTION 6 - Auditd
-# ============================================================
-
-cis_ubuntu_auditd_max_log_file: 8
-cis_ubuntu_auditd_max_log_file_action: "keep_logs"
-
-# ============================================================
-# SECTION 7 - Sysctl
-# ============================================================
-
-cis_ubuntu_sysctl_settings:
-  net.ipv4.ip_forward: 0
-  net.ipv4.conf.all.send_redirects: 0
-  net.ipv4.conf.default.send_redirects: 0
-  net.ipv4.conf.all.accept_redirects: 0
-  net.ipv4.conf.all.log_martians: 1
-  net.ipv4.tcp_syncookies: 1
-
-# ============================================================
-# SECTION 8 - Services inutiles
-# ============================================================
-
-cis_ubuntu_unnecessary_services:
-  - avahi-daemon
-  - cups
-  - isc-dhcp-server
-  - slapd
-  - nfs-server
-  - rpcbind
-  - bind9
-  - vsftpd
-  - apache2
-  - dovecot
-  - smbd
-  - squid
-  - snmpd
-
-# ============================================================
-# SECTION 9 - Firewall UFW
-# ============================================================
-
-cis_ubuntu_ufw_default_incoming: "deny"
-cis_ubuntu_ufw_default_outgoing: "allow"
-cis_ubuntu_ufw_allowed_ports:
-  - 22
-  - 6443
-
-# ============================================================
-# SECTION 10 - Politique de mots de passe
-# ============================================================
-
-cis_ubuntu_password_max_days: 365
-cis_ubuntu_password_min_days: 1
-cis_ubuntu_password_warn_age: 7
-
-# ============================================================
-# SECTION 11 - Restriction su
-# ============================================================
-
-cis_ubuntu_su_restrict_group: "sudo"
-
-# ============================================================
-# SECTION 12 - Permissions fichiers critiques
-# ============================================================
-
-cis_ubuntu_critical_files:
-  - path: /etc/passwd
-    owner: root
-    group: root
-    mode: "0644"
-  - path: /etc/shadow
-    owner: root
-    group: shadow
-    mode: "0640"
-  - path: /etc/group
-    owner: root
-    group: root
-    mode: "0644"
-
-# ============================================================
-# SECTION 13 - Core dumps
-# ============================================================
-
-cis_ubuntu_disable_core_dumps: true
-
-# ============================================================
-# SECTION 14 - AppArmor
-# ============================================================
-
-cis_ubuntu_apparmor_enabled: true
-
-# ============================================================
-# SECTION 15 - Logrotate
-# ============================================================
-
-cis_ubuntu_logrotate_rotate: 4
-cis_ubuntu_logrotate_frequency: "weekly"
+# Fréquence de rotation des logs

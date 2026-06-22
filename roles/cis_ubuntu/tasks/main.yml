@@ -8,6 +8,7 @@
     path: /etc/modprobe.d/cis-blacklist.conf
     line: "install {{ item }} /bin/true"
     create: true
+    mode: "0644"
   loop: "{{ cis_ubuntu_unused_filesystems }}"
   when: cis_ubuntu_disable_unused_filesystems
 
@@ -21,6 +22,7 @@
     regexp: '^tmpfs\s+/tmp'
     line: "tmpfs /tmp tmpfs defaults,{{ cis_ubuntu_tmp_partition_options }} 0 0"
     create: true
+    mode: "0644"
 
 # ============================================================
 # SECTION 3 - Désactivation IPv6
