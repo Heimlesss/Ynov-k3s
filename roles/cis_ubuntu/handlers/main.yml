@@ -1,0 +1,18 @@
+---
+# Les handlers sont déclenchés par "notify" dans les tâches
+# Ils ne s'exécutent qu'une seule fois à la fin du play
+# même si plusieurs tâches les notifient
+
+- name: restart sshd
+  service:
+    name: ssh
+    state: restarted
+# Redémarre SSH pour appliquer les changements de sshd_config
+# Déclenché par toutes les tâches de la Section 4 et 5
+
+- name: restart auditd
+  service:
+    name: auditd
+    state: restarted
+# Redémarre auditd pour appliquer les changements de auditd.conf
+# Déclenché par les tâches de la Section 6

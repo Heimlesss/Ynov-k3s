@@ -1,0 +1,47 @@
+# Fichier généré par Ansible - ne pas modifier manuellement
+# Règles d'audit CIS L1 Ubuntu
+
+# Supprimer toutes les règles existantes
+-D
+
+# Définir la taille du buffer
+-b 8192
+
+# ---- Surveillance des accès aux fichiers sensibles ----
+
+# Surveiller les modifications de la base utilisateurs
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+
+# Surveiller les modifications SSH
+-w /etc/ssh/sshd_config -p wa -k sshd
+
+# Surveiller les connexions/déconnexions
+-w /var/log/faillog -p wa -k logins
+-w /var/log/lastlog -p wa -k logins
+
+# Surveiller les commandes sudo
+-w /etc/sudoers -p wa -k sudoers
+-w /etc/sudoers.d/ -p wa -k sudoers
+
+# ---- Surveillance des appels système ----
+
+# Surveiller les changements de date/heure
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change
+-a always,exit -F arch=b64 -S clock_settime -k time-change
+
+# Surveiller les changements réseau
+-a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-locale
+
+# Surveiller le chargement/déchargement de modules noyau
+-w /sbin/insmod -p x -k modules
+-w /sbin/rmmod -p x -k modules
+-w /sbin/modprobe -p x -k modules
+
+# Taille max des logs : {{ auditd_max_log_file }}Mo
+# Action à la limite : {{ auditd_max_log_file_action }}
+
+# Rendre les règles immuables (nécessite reboot pour modifier)
+-e 2

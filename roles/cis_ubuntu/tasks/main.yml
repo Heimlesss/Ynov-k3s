@@ -1,0 +1,368 @@
+---
+# ============================================================
+# SECTION 1 - Désactivation des filesystems inutiles
+# ============================================================
+
+- name: "CIS 1 | Blacklister les filesystems inutiles"
+  lineinfile:
+    path: /etc/modprobe.d/cis-blacklist.conf
+    line: "install {{ item }} /bin/true"
+    create: yes
+  loop: "{{ unused_filesystems }}"
+  when: disable_unused_filesystems
+
+# lineinfile  → modifie ou crée un fichier ligne par ligne
+# path        → le fichier à modifier
+# line        → la ligne à écrire
+# create: yes → crée le fichier s'il n'existe pas
+# loop        → répète la tâche pour chaque filesystem de la liste
+# when        → n'exécute la tâche que si disable_unused_filesystems est true
+# "install X /bin/true" → quand Linux essaie de charger le module X,
+#                          il exécute /bin/true à la place (= ne fait rien)
+
+# ============================================================
+# SECTION 2 - Sécurisation de /tmp
+# ============================================================
+
+- name: "CIS 2 | Configurer les options de montage de /tmp"
+  lineinfile:
+    path: /etc/fstab
+    regexp: '^tmpfs\s+/tmp'
+    line: "tmpfs /tmp tmpfs defaults,{{ tmp_partition_options }} 0 0"
+    create: yes
+
+# regexp → cherche une ligne existante qui correspond à ce pattern
+#          si trouvée, la remplace par "line"
+#          si pas trouvée, ajoute "line" à la fin du fichier
+# C'est l'idempotence : pas de doublon si on relance le playbook
+
+# ============================================================
+# SECTION 3 - Désactivation IPv6
+# ============================================================
+
+- name: "CIS 3 | Désactiver IPv6 via sysctl"
+  sysctl:
+    name: "{{ item }}"
+    value: "1"
+    state: present
+    reload: yes
+  loop:
+    - net.ipv6.conf.all.disable_ipv6
+    - net.ipv6.conf.default.disable_ipv6
+    - net.ipv6.conf.lo.disable_ipv6
+  when: disable_ipv6
+
+# sysctl   → module dédié aux paramètres noyau
+# name     → le paramètre à modifier
+# value    → la valeur à appliquer
+# state    → present = s'assurer que le paramètre existe avec cette valeur
+# reload   → applique immédiatement sans redémarrage
+
+# ============================================================
+# SECTION 4 - Durcissement SSH
+# ============================================================
+
+- name: "CIS 4 | Installer OpenSSH server"
+  apt:
+    name: openssh-server
+    state: present
+    update_cache: yes
+
+# apt          → gestion des paquets Debian/Ubuntu
+# state:present → s'assurer que le paquet est installé
+# update_cache → fait un apt update avant d'installer
+
+- name: "CIS 4 | Configurer le port SSH"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port'
+    line: "Port {{ ssh_port }}"
+  notify: restart sshd
+
+# notify → déclenche le handler "restart sshd" si cette tâche
+#          a effectué un changement
+# Le handler redémarre SSH pour appliquer la nouvelle config
+
+- name: "CIS 4 | Interdire le login root en SSH"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: "PermitRootLogin {{ ssh_permit_root_login }}"
+  notify: restart sshd
+
+- name: "CIS 4 | Limiter les tentatives d'authentification"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?MaxAuthTries'
+    line: "MaxAuthTries {{ ssh_max_auth_tries }}"
+  notify: restart sshd
+
+- name: "CIS 4 | Configurer le timeout d'inactivité"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ClientAliveInterval'
+    line: "ClientAliveInterval {{ ssh_client_alive_interval }}"
+  notify: restart sshd
+
+- name: "CIS 4 | Configurer le nombre de signaux keepalive"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ClientAliveCountMax'
+    line: "ClientAliveCountMax {{ ssh_client_alive_count_max }}"
+  notify: restart sshd
+
+- name: "CIS 4 | Configurer le délai de grâce de connexion"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?LoginGraceTime'
+    line: "LoginGraceTime {{ ssh_login_grace_time }}"
+  notify: restart sshd
+
+# ============================================================
+# SECTION 5 - Bannière SSH
+# ============================================================
+
+- name: "CIS 5 | Déployer le message de bannière"
+  copy:
+    content: "{{ banner_message }}"
+    dest: /etc/issue.net
+    owner: root
+    group: root
+    mode: "0644"
+
+# copy    → copie un contenu vers un fichier destination
+# content → le contenu à écrire (ici la variable banner_message)
+# dest    → fichier de destination
+
+- name: "CIS 5 | Activer la bannière dans SSH"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Banner'
+    line: "Banner {{ ssh_banner }}"
+  notify: restart sshd
+
+# ============================================================
+# SECTION 6 - Auditd
+# ============================================================
+
+- name: "CIS 6 | Installer auditd"
+  apt:
+    name:
+      - auditd
+      - audispd-plugins
+    state: present
+
+- name: "CIS 6 | Configurer la taille max des logs d'audit"
+  lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: '^max_log_file\s*='
+    line: "max_log_file = {{ auditd_max_log_file }}"
+  notify: restart auditd
+
+- name: "CIS 6 | Configurer l'action à la taille max"
+  lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: '^max_log_file_action\s*='
+    line: "max_log_file_action = {{ auditd_max_log_file_action }}"
+  notify: restart auditd
+
+- name: "CIS 6 | Activer et démarrer auditd"
+  service:
+    name: auditd
+    state: started
+    enabled: yes
+
+# service         → gestion des services systemd
+# state: started  → s'assurer que le service tourne
+# enabled: yes    → s'assurer qu'il démarre au boot
+
+# ============================================================
+# SECTION 7 - Paramètres sysctl réseau
+# ============================================================
+
+- name: "CIS 7 | Appliquer les paramètres sysctl de sécurité réseau"
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop: "{{ sysctl_settings | dict2items }}"
+
+# dict2items → convertit le dictionnaire sysctl_settings en liste
+# de paires clé/valeur pour pouvoir faire un loop dessus
+# Exemple : {net.ipv4.ip_forward: 0} devient [{key: net.ipv4.ip_forward, value: 0}]
+
+# ============================================================
+# SECTION 8 - Désactivation des services inutiles
+# ============================================================
+
+- name: "CIS 8 | Désactiver et stopper les services inutiles"
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  loop: "{{ unnecessary_services }}"
+  ignore_errors: yes
+
+# ignore_errors: yes → ne bloque pas si le service n'existe pas
+# Normal : tous ces services ne sont pas forcément installés
+
+# ============================================================
+# SECTION 9 - Pare-feu UFW
+# ============================================================
+
+- name: "CIS 9 | Installer UFW"
+  apt:
+    name: ufw
+    state: present
+
+- name: "CIS 9 | Politique par défaut - bloquer le trafic entrant"
+  ufw:
+    default: "{{ ufw_default_incoming }}"
+    direction: incoming
+
+- name: "CIS 9 | Politique par défaut - autoriser le trafic sortant"
+  ufw:
+    default: "{{ ufw_default_outgoing }}"
+    direction: outgoing
+
+- name: "CIS 9 | Ouvrir les ports autorisés"
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ufw_allowed_ports }}"
+
+- name: "CIS 9 | Activer UFW"
+  ufw:
+    state: enabled
+
+# ============================================================
+# SECTION 10 - Politique de mots de passe
+# ============================================================
+
+- name: "CIS 10 | Configurer la durée de validité des mots de passe"
+  lineinfile:
+    path: /etc/login.defs
+    regexp: '^PASS_MAX_DAYS'
+    line: "PASS_MAX_DAYS {{ password_max_days }}"
+
+- name: "CIS 10 | Configurer la durée minimale des mots de passe"
+  lineinfile:
+    path: /etc/login.defs
+    regexp: '^PASS_MIN_DAYS'
+    line: "PASS_MIN_DAYS {{ password_min_days }}"
+
+- name: "CIS 10 | Configurer l'avertissement d'expiration"
+  lineinfile:
+    path: /etc/login.defs
+    regexp: '^PASS_WARN_AGE'
+    line: "PASS_WARN_AGE {{ password_warn_age }}"
+
+# /etc/login.defs → fichier de configuration des comptes utilisateurs
+# Definit les règles globales de gestion des mots de passe
+
+# ============================================================
+# SECTION 11 - Restriction de su
+# ============================================================
+
+- name: "CIS 11 | Restreindre su au groupe sudo"
+  lineinfile:
+    path: /etc/pam.d/su
+    regexp: '^#?auth\s+required\s+pam_wheel'
+    line: "auth required pam_wheel.so use_uid group={{ su_restrict_group }}"
+
+# /etc/pam.d/su → configuration PAM pour la commande su
+# PAM = Pluggable Authentication Modules = système d'authentification Linux
+# pam_wheel.so  → module qui restreint su à un groupe spécifique
+
+# ============================================================
+# SECTION 12 - Permissions des fichiers critiques
+# ============================================================
+
+- name: "CIS 12 | Appliquer les permissions sur les fichiers critiques"
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ critical_files }}"
+
+# file  → module de gestion des fichiers et répertoires
+# Applique owner/group/mode sur chaque fichier de la liste critical_files
+
+# ============================================================
+# SECTION 13 - Désactivation des core dumps
+# ============================================================
+
+- name: "CIS 13 | Désactiver les core dumps via limits.conf"
+  lineinfile:
+    path: /etc/security/limits.conf
+    line: "* hard core 0"
+    create: yes
+  when: disable_core_dumps
+
+- name: "CIS 13 | Désactiver les core dumps via sysctl"
+  sysctl:
+    name: fs.suid_dumpable
+    value: "0"
+    state: present
+    reload: yes
+  when: disable_core_dumps
+
+# Deux mécanismes complémentaires :
+# limits.conf    → limite les ressources par utilisateur (core = vidage mémoire)
+# fs.suid_dumpable = 0 → interdit les core dumps des binaires SUID
+
+# ============================================================
+# SECTION 14 - AppArmor
+# ============================================================
+
+- name: "CIS 14 | Installer AppArmor"
+  apt:
+    name:
+      - apparmor
+      - apparmor-utils
+    state: present
+  when: apparmor_enabled
+
+- name: "CIS 14 | Activer et démarrer AppArmor"
+  service:
+    name: apparmor
+    state: started
+    enabled: yes
+  when: apparmor_enabled
+
+- name: "CIS 14 | Mettre tous les profils en mode enforce"
+  command: aa-enforce /etc/apparmor.d/*
+  when: apparmor_enabled
+  ignore_errors: yes
+  changed_when: false
+
+# command      → exécute une commande shell
+# aa-enforce   → met les profils AppArmor en mode "enforce"
+#                (bloque réellement les actions non autorisées)
+#                par opposition au mode "complain" (journalise seulement)
+# changed_when: false → cette commande ne modifie pas l'état
+#                       donc Ansible ne la marque pas comme "changed"
+
+# ============================================================
+# SECTION 15 - Logrotate
+# ============================================================
+
+- name: "CIS 15 | Installer logrotate"
+  apt:
+    name: logrotate
+    state: present
+
+- name: "CIS 15 | Configurer la politique de rotation des logs"
+  lineinfile:
+    path: /etc/logrotate.conf
+    regexp: '^rotate'
+    line: "rotate {{ logrotate_rotate }}"
+
+- name: "CIS 15 | Configurer la fréquence de rotation"
+  lineinfile:
+    path: /etc/logrotate.conf
+    regexp: '^(daily|weekly|monthly)'
+    line: "{{ logrotate_frequency }}"

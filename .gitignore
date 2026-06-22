@@ -1,0 +1,6 @@
+# Ne jamais committer ces fichiers
+*.pem
+*.key
+*.crt
+.env
+inventory/hosts_prod.yml
