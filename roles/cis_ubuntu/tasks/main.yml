@@ -158,6 +158,7 @@
     regexp: '^max_log_file\s*='
     line: "max_log_file = {{ auditd_max_log_file }}"
   notify: restart auditd
+  when: ansible_check_mode == false
 
 - name: "CIS 6 | Configurer l'action à la taille max"
   lineinfile:
@@ -165,6 +166,7 @@
     regexp: '^max_log_file_action\s*='
     line: "max_log_file_action = {{ auditd_max_log_file_action }}"
   notify: restart auditd
+  when: ansible_check_mode == false
 
 - name: "CIS 6 | Activer et démarrer auditd"
   service:
