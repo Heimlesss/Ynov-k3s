@@ -116,11 +116,6 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      - name: Debug secrets
-        run: |
-          echo "HOST=${{ secrets.VM1_HOST }}"
-          echo "USER=${{ secrets.VM1_USER }}"
-
       - name: Configurer la clé SSH
         run: |
           mkdir -p ~/.ssh
@@ -136,9 +131,9 @@ jobs:
       - name: Déployer le hardening CIS sur VM2
         run: |
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          "cd ~/Ynov-k3s && ansible-playbook playbooks/harden.yml"
+          "cd ~/Ynov-k3s && ansible-playbook playbooks/harden.yml --private-key ~/.ssh/id_ed25519"
 
-      - name: Déployer le hardening CIS sur VM2
+      - name: Déployer k3s sur VM2
         run: |
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          "cd ~/Ynov-k3s && ansible-playbook playbooks/harden.yml --private-key ~/.ssh/id_ed25519"
+          "cd ~/Ynov-k3s && ansible-playbook playbooks/k3s.yml --private-key ~/.ssh/id_ed25519"
