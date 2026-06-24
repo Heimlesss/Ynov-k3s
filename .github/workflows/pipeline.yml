@@ -120,10 +120,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Login Harbor
-        run: |
-          docker login llynov-k3s.duckdns.org \
-            -u ${{ secrets.HARBOR_USER }} \
-            -p ${{ secrets.HARBOR_PASSWORD }}
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USER }}
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
+        run: echo "$HARBOR_PASSWORD" | docker login llynov-k3s.duckdns.org -u "$HARBOR_USER" --password-stdin
 
       - name: Installer Cosign
         uses: sigstore/cosign-installer@v3
