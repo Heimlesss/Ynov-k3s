@@ -244,11 +244,13 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
           'ssh -i ~/.ssh/id_ed25519_ansible ansible@178.170.25.223 \
-          "sudo apt update && \
-           sudo apt install -y openscap-scanner && \
-           sudo apt install -y ssg-debderived || \
-           wget -q https://github.com/ComplianceAsCode/content/releases/download/v0.1.73/scap-security-guide-0.1.73-ubuntu2404.zip -O /tmp/ssg.zip && \
-           sudo unzip /tmp/ssg.zip -d /usr/share/xml/scap/ssg/content/"'
+          "sudo apt update -y && sudo apt install -y openscap-scanner ssg-debderived"'
+
+      - name: Vérifier le fichier SCAP
+        run: |
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
+          'ssh -i ~/.ssh/id_ed25519_ansible ansible@178.170.25.223 \
+          "ls /usr/share/xml/scap/ssg/content/ | grep ubuntu"'
 
       - name: Lancer le scan CIS
         run: |
