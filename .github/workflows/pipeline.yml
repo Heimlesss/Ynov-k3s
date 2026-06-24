@@ -226,3 +226,4 @@ jobs:
           target: 'http://178.170.25.223:3000'
           fail_action: false
           allow_issue_writing: false
+          artifact_name: zap-report
