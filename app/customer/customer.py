@@ -41,7 +41,7 @@ def make_reservation():
         )
 
         try:
-            response = requests.post(url, json=reservation.to_dict())
+            response = requests.post(url, json=reservation.to_dict(), timeout=5)
             logging.info(f"Reservation POST status: {response.status_code}")
         except Exception as e:
             logging.error(f"Failed to make reservation: {e}")
@@ -51,7 +51,7 @@ def get_menus(reservation_id):
     url = Config().get_service("waiter") + "/menu"
     headers = {"X-Reservation-Id": str(reservation_id)}
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=5)
         if response.status_code != 200:
             logging.error(f"Get menus failed: {response.status_code} - {response.text}")
         return response.json()
@@ -77,7 +77,7 @@ def make_order(reservation_id, menus):
     headers = {"X-Reservation-Id": str(reservation_id)}
     data = {"reservation_id": str(reservation_id), "items": menus}
     try:
-        requests.post(url, json=data, headers=headers)
+        requests.post(url, json=data, headers=headers, timeout=5)
     except Exception as e:
         logging.error(f"Failed to make order: {e}")
 
@@ -85,7 +85,7 @@ def make_payment(reservation_data):
     logging.info(f"Customer {reservation_data['reservation_id']} making payment")
     url = Config().get_service("payment") + "/pay"
     try:
-        requests.post(url, json=reservation_data)
+        requests.post(url, json=reservation_data, timeout=5)
     except Exception as e:
         logging.error(f"Failed to make payment: {e}")
 

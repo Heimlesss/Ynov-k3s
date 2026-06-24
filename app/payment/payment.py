@@ -67,4 +67,4 @@ if __name__ == "__main__":
     # Ensure tables exist
     DatabaseConnector().init_db()
     
-    app.run(debug=False, host="0.0.0.0", port=5003)
+    app.run(debug=False, host="0.0.0.0", port=5003) # nosec B104

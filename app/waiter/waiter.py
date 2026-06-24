@@ -117,4 +117,4 @@ if __name__ == "__main__":
     threading.Thread(target=listen_reservations, daemon=True).start()
     threading.Thread(target=listen_kitchen, daemon=True).start()
     
-    app.run(debug=False, host="0.0.0.0", port=5001, use_reloader=False)
+    app.run(debug=False, host="0.0.0.0", port=5001, use_reloader=False) # nosec B104
