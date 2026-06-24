@@ -271,7 +271,6 @@
     value: "0"
     state: present
     reload: true
-    mode: "0644"
   when: cis_ubuntu_disable_core_dumps
 
 # ============================================================
