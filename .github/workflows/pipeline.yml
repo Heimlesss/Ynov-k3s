@@ -52,56 +52,55 @@ jobs:
             p/python
             p/dockerfile
             p/ansible
-
   trivy:
-  name: Trivy CVE Scan
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout du code
-      uses: actions/checkout@v4
+    name: Trivy CVE Scan
+    runs-on: ubuntu-latest
+    steps:
+     - name: Checkout du code
+       uses: actions/checkout@v4
 
-    - name: Builder les images avec docker compose
-      run: docker compose -f app/docker-compose.yml build
+     - name: Builder les images avec docker compose
+       run: docker compose -f app/docker-compose.yml build
 
-    - name: Scanner customer
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: app-customer:latest
-        format: table
-        exit-code: '1'
-        severity: HIGH,CRITICAL
+     - name: Scanner customer
+       uses: aquasecurity/trivy-action@master
+       with:
+         image-ref: app-customer:latest
+         format: table
+         exit-code: '1'
+         severity: HIGH,CRITICAL
 
-    - name: Scanner waiter
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: app-waiter:latest
-        format: table
-        exit-code: '1'
-        severity: HIGH,CRITICAL
+     - name: Scanner waiter
+       uses: aquasecurity/trivy-action@master
+       with:
+          image-ref: app-waiter:latest
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
 
-    - name: Scanner kitchen
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: app-kitchen:latest
-        format: table
-        exit-code: '1'
-        severity: HIGH,CRITICAL
+     - name: Scanner kitchen
+       uses: aquasecurity/trivy-action@master
+       with:
+          image-ref: app-kitchen:latest
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
 
-    - name: Scanner payment
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: app-payment:latest
-        format: table
-        exit-code: '1'
-        severity: HIGH,CRITICAL
+     - name: Scanner payment
+       uses: aquasecurity/trivy-action@master
+       with:
+          image-ref: app-payment:latest
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
 
-    - name: Scanner reservation
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: app-reservation:latest
-        format: table
-        exit-code: '1'
-        severity: HIGH,CRITICAL
+     - name: Scanner reservation
+       uses: aquasecurity/trivy-action@master
+       with:
+          image-ref: app-reservation:latest
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
 
   deploy:
     name: Deploy via Ansible
