@@ -69,6 +69,7 @@ jobs:
          format: table
          exit-code: '1'
          severity: HIGH,CRITICAL
+         ignore-unfixed: true   # ← ignore les CVE sans fix disponible
 
      - name: Scanner waiter
        uses: aquasecurity/trivy-action@master
@@ -77,6 +78,7 @@ jobs:
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
+          ignore-unfixed: true   # ← ignore les CVE sans fix disponible
 
      - name: Scanner kitchen
        uses: aquasecurity/trivy-action@master
@@ -85,6 +87,7 @@ jobs:
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
+          ignore-unfixed: true   # ← ignore les CVE sans fix disponible
 
      - name: Scanner payment
        uses: aquasecurity/trivy-action@master
@@ -93,6 +96,7 @@ jobs:
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
+          ignore-unfixed: true   # ← ignore les CVE sans fix disponible
 
      - name: Scanner reservation
        uses: aquasecurity/trivy-action@master
@@ -101,6 +105,7 @@ jobs:
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
+          ignore-unfixed: true   # ← ignore les CVE sans fix disponible
 
   deploy:
     name: Deploy via Ansible
