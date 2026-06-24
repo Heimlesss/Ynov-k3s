@@ -225,4 +225,4 @@ jobs:
         with:
           target: 'http://178.170.25.223:30001'
           fail_action: false
-          allow_issue_creation: false
+          allow_issue_writing: false
