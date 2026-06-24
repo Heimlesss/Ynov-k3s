@@ -116,6 +116,11 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
 
+
+      - name: Debug secrets
+        run: |
+          echo "HOST=${{ secrets.VM1_HOST }}"
+          echo "USER=${{ secrets.VM1_USER }}"
       - name: Configurer la clé SSH
         run: |
           mkdir -p ~/.ssh
