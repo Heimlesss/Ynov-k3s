@@ -1,0 +1,154 @@
+services:
+  # Databases and Broker
+  db:
+    image: postgres:16
+    container_name: restaurant_db
+    environment:
+      POSTGRES_DB: restaurant
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    networks:
+      - restaurant_network
+
+  redis:
+    image: redis:7
+    container_name: restaurant_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - restaurant_network
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: restaurant_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - restaurant_network
+
+  # Services
+  customer:
+    build:
+      context: .
+      dockerfile: customer/Dockerfile
+    container_name: customer_service
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=customer_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - waiter
+      - reservation
+      - payment
+    networks:
+      - restaurant_network
+
+  waiter:
+    build:
+      context: .
+      dockerfile: waiter/Dockerfile
+    container_name: waiter_service
+    ports:
+      - "5001:5001"
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=waiter_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - restaurant_network
+
+  kitchen:
+    build:
+      context: .
+      dockerfile: kitchen/Dockerfile
+    container_name: kitchen_service
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=kitchen_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - restaurant_network
+
+  payment:
+    build:
+      context: .
+      dockerfile: payment/Dockerfile
+    container_name: payment_service
+    ports:
+      - "5003:5003"
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=payment_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - restaurant_network
+
+  reservation:
+    build:
+      context: .
+      dockerfile: reservation/Dockerfile
+    container_name: reservation_service
+    ports:
+      - "5004:5004"
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=reservation_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - restaurant_network
+
+networks:
+  restaurant_network:
+    driver: bridge
