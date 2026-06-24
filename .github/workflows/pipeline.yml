@@ -136,4 +136,4 @@ jobs:
       - name: Déployer k3s sur VM2
         run: |
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          ""cd ~/Ynov-k3s && ansible-playbook playbooks/harden.yml --private-key ~/.ssh/id_ed25519_ansible""
+          ""cd ~/Ynov-k3s && ansible-playbook playbooks/k3s.yml --private-key ~/.ssh/id_ed25519_ansible""
