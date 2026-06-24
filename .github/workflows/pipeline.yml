@@ -212,3 +212,17 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
           'cd ~/Ynov-k3s && ansible-playbook playbooks/k3s.yml --private-key ~/.ssh/id_ed25519_ansible'
+  zap:
+    name: ZAP Baseline DAST
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://178.170.25.223:30001'
+          fail_action: false
+          allow_issue_creation: false
