@@ -131,7 +131,7 @@ jobs:
       - name: Git pull sur VM1
         run: |
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          "cd ~/Ynov-k3s && git pull"
+          "cd ~/Ynov-k3s && git pull https://${{ secrets.GH_TOKEN }}@github.com/Heimlesss/Ynov-k3s.git"
 
       - name: Déployer le hardening CIS sur VM2
         run: |
