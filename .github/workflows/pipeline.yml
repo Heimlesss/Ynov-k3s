@@ -108,10 +108,85 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true   # ← ignore les CVE sans fix disponible
 
+  build-and-sign:
+    name: Build Sign and Push to Harbor
+    runs-on: ubuntu-latest
+    needs: [ansible-lint, bandit, semgrep, trivy]
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Login Harbor
+        run: |
+          docker login llynov-k3s.duckdns.org \
+            -u ${{ secrets.HARBOR_USER }} \
+            -p ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Installer Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Build et push customer
+        run: |
+          docker build -t llynov-k3s.duckdns.org/restaurant/customer:latest \
+            -f app/customer/Dockerfile app/
+          docker push llynov-k3s.duckdns.org/restaurant/customer:latest
+
+      - name: Signer customer avec Cosign keyless
+        run: |
+          cosign sign --yes \
+            llynov-k3s.duckdns.org/restaurant/customer:latest
+
+      - name: Build et push waiter
+        run: |
+          docker build -t llynov-k3s.duckdns.org/restaurant/waiter:latest \
+            -f app/waiter/Dockerfile app/
+          docker push llynov-k3s.duckdns.org/restaurant/waiter:latest
+
+      - name: Signer waiter avec Cosign keyless
+        run: |
+          cosign sign --yes \
+            llynov-k3s.duckdns.org/restaurant/waiter:latest
+
+      - name: Build et push kitchen
+        run: |
+          docker build -t llynov-k3s.duckdns.org/restaurant/kitchen:latest \
+            -f app/kitchen/Dockerfile app/
+          docker push llynov-k3s.duckdns.org/restaurant/kitchen:latest
+
+      - name: Signer kitchen avec Cosign keyless
+        run: |
+          cosign sign --yes \
+            llynov-k3s.duckdns.org/restaurant/kitchen:latest
+
+      - name: Build et push payment
+        run: |
+          docker build -t llynov-k3s.duckdns.org/restaurant/payment:latest \
+            -f app/payment/Dockerfile app/
+          docker push llynov-k3s.duckdns.org/restaurant/payment:latest
+
+      - name: Signer payment avec Cosign keyless
+        run: |
+          cosign sign --yes \
+            llynov-k3s.duckdns.org/restaurant/payment:latest
+
+      - name: Build et push reservation
+        run: |
+          docker build -t llynov-k3s.duckdns.org/restaurant/reservation:latest \
+            -f app/reservation/Dockerfile app/
+          docker push llynov-k3s.duckdns.org/restaurant/reservation:latest
+
+      - name: Signer reservation avec Cosign keyless
+        run: |
+          cosign sign --yes \
+            llynov-k3s.duckdns.org/restaurant/reservation:latest        
+
   deploy:
     name: Deploy via Ansible
     runs-on: ubuntu-latest
-    needs: [ansible-lint, bandit, semgrep, trivy]
+    needs: [ansible-lint, bandit, semgrep, trivy, build-and-sign]
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
