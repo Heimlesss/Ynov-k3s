@@ -15,16 +15,29 @@
       when: ns_check.rc != 0
       changed_when: true
 
-    - name: Créer le secret Grafana
-      ansible.builtin.shell:
-        cmd: |
-          kubectl create secret generic grafana-credentials \
-            --from-literal=username="{{ grafana_user }}" \
-            --from-literal=password="{{ grafana_password }}" \
-            --namespace=restaurant \
-            --dry-run=client -o yaml | kubectl apply -f -
-        executable: /bin/bash
+    - name: Créer le fichier manifest du secret Grafana
+      ansible.builtin.copy:
+        dest: /tmp/grafana-secret.yaml
+        mode: '0600'
+        content: |
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: grafana-credentials
+            namespace: restaurant
+          type: Opaque
+          stringData:
+            username: "{{ grafana_user }}"
+            password: "{{ grafana_password }}"
+
+    - name: Appliquer le secret Grafana
+      ansible.builtin.command: kubectl apply -f /tmp/grafana-secret.yaml
       changed_when: true
+
+    - name: Supprimer le fichier secret temporaire
+      ansible.builtin.file:
+        path: /tmp/grafana-secret.yaml
+        state: absent
 
     - name: Copier les manifests monitoring
       ansible.builtin.copy:
