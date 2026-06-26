@@ -313,7 +313,7 @@ jobs:
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
-          target: 'http://178.170.25.223:3000'
+          target: 'http://178.170.25.223:30001'
           fail_action: false
           allow_issue_writing: false
           artifact_name: zap-report
