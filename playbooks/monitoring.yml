@@ -78,3 +78,22 @@
     - name: Attendre que Grafana soit Ready
       ansible.builtin.command: kubectl rollout status deployment/grafana -n restaurant --timeout=120s
       changed_when: false
+
+    - name: Tuer les port-forwards Grafana existants
+      ansible.builtin.command: pkill -f "kubectl port-forward.*grafana"
+      failed_when: false
+      changed_when: true
+
+    - name: Lancer le port-forward Grafana
+      ansible.builtin.command: >
+        nohup kubectl port-forward -n restaurant service/grafana 3000:3000
+        --address=0.0.0.0
+      async: 10
+      poll: 0
+      changed_when: true
+
+    - name: Attendre que Grafana soit accessible sur le port 3000
+      ansible.builtin.wait_for:
+        host: 0.0.0.0
+        port: 3000
+        timeout: 30
