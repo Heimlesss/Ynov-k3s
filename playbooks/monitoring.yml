@@ -1,0 +1,55 @@
+---
+- name: Deploy monitoring stack on k3s
+  hosts: targets
+  become: true
+
+  tasks:
+    - name: Créer le namespace restaurant si absent
+      command: kubectl get namespace restaurant
+      register: ns_check
+      failed_when: false
+      changed_when: false
+
+    - name: Créer namespace restaurant
+      command: kubectl create namespace restaurant
+      when: ns_check.rc != 0
+
+    - name: Créer le secret Grafana
+      shell: |
+        kubectl create secret generic grafana-credentials \
+          --from-literal=username="{{ grafana_user }}" \
+          --from-literal=password="{{ grafana_password }}" \
+          --namespace=restaurant \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Copier les manifests monitoring
+      copy:
+        src: "{{ playbook_dir }}/../k8s/monitoring/"
+        dest: /home/ansible/monitoring/
+        owner: ansible
+        group: ansible
+        mode: '0644'
+
+    - name: Appliquer le ConfigMap Prometheus
+      command: kubectl apply -f /home/ansible/monitoring/prometheus-config.yaml
+
+    - name: Appliquer Prometheus
+      command: kubectl apply -f /home/ansible/monitoring/prometheus.yaml
+
+    - name: Appliquer Pushgateway
+      command: kubectl apply -f /home/ansible/monitoring/pushgateway.yaml
+
+    - name: Appliquer Grafana
+      command: kubectl apply -f /home/ansible/monitoring/grafana.yaml
+
+    - name: Appliquer node-exporter
+      command: kubectl apply -f /home/ansible/monitoring/node-exporter.yaml
+
+    - name: Attendre que Prometheus soit Ready
+      command: kubectl rollout status deployment/prometheus -n restaurant --timeout=120s
+
+    - name: Attendre que Pushgateway soit Ready
+      command: kubectl rollout status deployment/pushgateway -n restaurant --timeout=120s
+
+    - name: Attendre que Grafana soit Ready
+      command: kubectl rollout status deployment/grafana -n restaurant --timeout=120s

@@ -53,60 +53,61 @@ jobs:
             p/python
             p/dockerfile
             p/ansible
+
   trivy:
     name: Trivy CVE Scan
     runs-on: ubuntu-latest
     steps:
-     - name: Checkout du code
-       uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v4
 
-     - name: Builder les images avec docker compose
-       run: docker compose -f app/docker-compose.yml build
+      - name: Builder les images avec docker compose
+        run: docker compose -f app/docker-compose.yml build
 
-     - name: Scanner customer
-       uses: aquasecurity/trivy-action@master
-       with:
-         image-ref: app-customer:latest
-         format: table
-         exit-code: '1'
-         severity: HIGH,CRITICAL
-         ignore-unfixed: true   # ← ignore les CVE sans fix disponible
+      - name: Scanner customer
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: app-customer:latest
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
 
-     - name: Scanner waiter
-       uses: aquasecurity/trivy-action@master
-       with:
+      - name: Scanner waiter
+        uses: aquasecurity/trivy-action@master
+        with:
           image-ref: app-waiter:latest
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
-          ignore-unfixed: true   # ← ignore les CVE sans fix disponible
+          ignore-unfixed: true
 
-     - name: Scanner kitchen
-       uses: aquasecurity/trivy-action@master
-       with:
+      - name: Scanner kitchen
+        uses: aquasecurity/trivy-action@master
+        with:
           image-ref: app-kitchen:latest
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
-          ignore-unfixed: true   # ← ignore les CVE sans fix disponible
+          ignore-unfixed: true
 
-     - name: Scanner payment
-       uses: aquasecurity/trivy-action@master
-       with:
+      - name: Scanner payment
+        uses: aquasecurity/trivy-action@master
+        with:
           image-ref: app-payment:latest
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
-          ignore-unfixed: true   # ← ignore les CVE sans fix disponible
+          ignore-unfixed: true
 
-     - name: Scanner reservation
-       uses: aquasecurity/trivy-action@master
-       with:
+      - name: Scanner reservation
+        uses: aquasecurity/trivy-action@master
+        with:
           image-ref: app-reservation:latest
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
-          ignore-unfixed: true   # ← ignore les CVE sans fix disponible
+          ignore-unfixed: true
 
   build-and-sign:
     name: Build Sign and Push to Harbor
@@ -135,9 +136,7 @@ jobs:
           docker push llynov-k3s.duckdns.org/restaurant/customer:latest
 
       - name: Signer customer avec Cosign keyless
-        run: |
-          cosign sign --yes \
-            llynov-k3s.duckdns.org/restaurant/customer:latest
+        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/customer:latest
 
       - name: Build et push waiter
         run: |
@@ -146,9 +145,7 @@ jobs:
           docker push llynov-k3s.duckdns.org/restaurant/waiter:latest
 
       - name: Signer waiter avec Cosign keyless
-        run: |
-          cosign sign --yes \
-            llynov-k3s.duckdns.org/restaurant/waiter:latest
+        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/waiter:latest
 
       - name: Build et push kitchen
         run: |
@@ -157,9 +154,7 @@ jobs:
           docker push llynov-k3s.duckdns.org/restaurant/kitchen:latest
 
       - name: Signer kitchen avec Cosign keyless
-        run: |
-          cosign sign --yes \
-            llynov-k3s.duckdns.org/restaurant/kitchen:latest
+        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/kitchen:latest
 
       - name: Build et push payment
         run: |
@@ -168,9 +163,7 @@ jobs:
           docker push llynov-k3s.duckdns.org/restaurant/payment:latest
 
       - name: Signer payment avec Cosign keyless
-        run: |
-          cosign sign --yes \
-            llynov-k3s.duckdns.org/restaurant/payment:latest
+        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/payment:latest
 
       - name: Build et push reservation
         run: |
@@ -179,14 +172,48 @@ jobs:
           docker push llynov-k3s.duckdns.org/restaurant/reservation:latest
 
       - name: Signer reservation avec Cosign keyless
+        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/reservation:latest
+
+  openscap-before:
+    name: OpenSCAP AVANT hardening — VM2
+    runs-on: ubuntu-latest
+    needs: [build-and-sign]
+    steps:
+      - name: Configurer la clé SSH
         run: |
-          cosign sign --yes \
-            llynov-k3s.duckdns.org/restaurant/reservation:latest        
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM1_SSH_KEY }}" > ~/.ssh/id_ed25519_ci
+          chmod 600 ~/.ssh/id_ed25519_ci
+          ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Installer OpenSCAP et SSG sur VM2
+        run: |
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
+          'ssh -i ~/.ssh/id_ed25519_ansible -o StrictHostKeyChecking=no \
+           ansible@${{ secrets.VM2_HOST }} \
+           "sudo apt update -y && sudo apt install -y openscap-scanner unzip && \
+            [ -f ~/ssg/scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml ] || \
+            (wget -q https://github.com/ComplianceAsCode/content/releases/download/v0.1.81/scap-security-guide-0.1.81.zip \
+             -O ~/ssg.zip && unzip -q ~/ssg.zip -d ~/ssg/)"'
+
+      - name: Scan CIS AVANT hardening
+        run: |
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
+          'ssh -i ~/.ssh/id_ed25519_ansible -o StrictHostKeyChecking=no \
+           ansible@${{ secrets.VM2_HOST }} \
+           "sudo oscap xccdf eval \
+             --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
+             --results /tmp/cis-before.xml \
+             ~/ssg/scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml; \
+            SCORE=\$(grep -o '"'"'[0-9]*\.[0-9]*'"'"' /tmp/cis-before.xml | head -1); \
+            echo \"=== Score CIS AVANT hardening : \$SCORE ===\"; \
+            echo cis_score{host=\\\"vm2\\\",status=\\\"avant_hardening\\\"} \$SCORE | \
+            curl --data-binary @- http://178.170.25.223:30091/metrics/job/openscap/instance/vm2-before"'
 
   deploy:
     name: Deploy via Ansible
     runs-on: ubuntu-latest
-    needs: [ansible-lint, bandit, semgrep, trivy, build-and-sign]
+    needs: [openscap-before]
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -203,19 +230,82 @@ jobs:
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
           "cd ~/Ynov-k3s && git pull https://${{ secrets.GH_TOKEN }}@github.com/Heimlesss/Ynov-k3s.git"
 
-      - name: Déployer le hardening CIS sur VM2
+      - name: Déployer le hardening CIS et k3s via Ansible
         run: |
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          'cd ~/Ynov-k3s && ansible-playbook playbooks/harden.yml --private-key ~/.ssh/id_ed25519_ansible'
+          'cd ~/Ynov-k3s && \
+           ansible-playbook playbooks/harden.yml --private-key ~/.ssh/id_ed25519_ansible && \
+           ansible-playbook playbooks/k3s.yml --private-key ~/.ssh/id_ed25519_ansible'
 
-      - name: Déployer k3s sur VM2
+  deploy-monitoring:
+    name: Deploy Monitoring Stack
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    steps:
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM1_SSH_KEY }}" > ~/.ssh/id_ed25519_ci
+          chmod 600 ~/.ssh/id_ed25519_ci
+          ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Déployer la stack monitoring via Ansible
         run: |
           ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          'cd ~/Ynov-k3s && ansible-playbook playbooks/k3s.yml --private-key ~/.ssh/id_ed25519_ansible'
+          'cd ~/Ynov-k3s && \
+           ansible-playbook playbooks/monitoring.yml \
+           --private-key ~/.ssh/id_ed25519_ansible \
+           --extra-vars "grafana_user=${{ secrets.GRAFANA_USER }} grafana_password=${{ secrets.GRAFANA_PASSWORD }}"'
+
+  deploy-apps:
+    name: Deploy Restaurant App
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    steps:
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM1_SSH_KEY }}" > ~/.ssh/id_ed25519_ci
+          chmod 600 ~/.ssh/id_ed25519_ci
+          ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Déployer l'app restaurant sur k3s
+        run: |
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
+          'ssh -i ~/.ssh/id_ed25519_ansible -o StrictHostKeyChecking=no \
+           ansible@${{ secrets.VM2_HOST }} \
+           "sudo kubectl apply -f ~/manifests/ -n restaurant"'
+
+  openscap-after:
+    name: OpenSCAP APRÈS hardening — VM2
+    runs-on: ubuntu-latest
+    needs: [deploy, deploy-monitoring]
+    steps:
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM1_SSH_KEY }}" > ~/.ssh/id_ed25519_ci
+          chmod 600 ~/.ssh/id_ed25519_ci
+          ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Scan CIS APRÈS hardening et push score
+        run: |
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
+          'ssh -i ~/.ssh/id_ed25519_ansible -o StrictHostKeyChecking=no \
+           ansible@${{ secrets.VM2_HOST }} \
+           "sudo oscap xccdf eval \
+             --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
+             --results /tmp/cis-after.xml \
+             ~/ssg/scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml; \
+            SCORE=\$(grep -o '"'"'[0-9]*\.[0-9]*'"'"' /tmp/cis-after.xml | head -1); \
+            echo \"=== Score CIS APRÈS hardening : \$SCORE ===\"; \
+            echo cis_score{host=\\\"vm2\\\",status=\\\"apres_hardening\\\"} \$SCORE | \
+            curl --data-binary @- http://178.170.25.223:30091/metrics/job/openscap/instance/vm2-after"'
+
   zap:
     name: ZAP Baseline DAST
     runs-on: ubuntu-latest
-    needs: [deploy]
+    needs: [deploy-monitoring]
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -227,40 +317,3 @@ jobs:
           fail_action: false
           allow_issue_writing: false
           artifact_name: zap-report
-
-  openscap:
-    name: OpenSCAP CIS Score
-    runs-on: ubuntu-latest
-    needs: [deploy]
-    steps:
-      - name: Configurer la clé SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VM1_SSH_KEY }}" > ~/.ssh/id_ed25519_ci
-          chmod 600 ~/.ssh/id_ed25519_ci
-          ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Installer OpenSCAP sur VM2
-        run: |
-          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          'ssh -i ~/.ssh/id_ed25519_ansible ansible@178.170.25.223 \
-          "sudo apt update -y && sudo apt install -y openscap-scanner ssg-debderived"'
-
-      - name: Vérifier le fichier SCAP
-        run: |
-          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          'ssh -i ~/.ssh/id_ed25519_ansible ansible@178.170.25.223 \
-          "ls /usr/share/xml/scap/ssg/content/ | grep ubuntu"'
-
-      - name: Lancer le scan CIS
-        run: |
-          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          'ssh -i ~/.ssh/id_ed25519_ansible ansible@178.170.25.223 \
-          "sudo oscap xccdf eval \
-            --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
-            --report /tmp/cis-report.html \
-            /usr/share/xml/scap/ssg/content/ssg-ubuntu2404-ds.xml; \
-           echo CIS_SCORE_AFTER=\$(sudo oscap xccdf eval \
-            --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
-            /usr/share/xml/scap/ssg/content/ssg-ubuntu2404-ds.xml 2>&1 | \
-            grep -oP 'Score: \K[0-9.]+')"'     
