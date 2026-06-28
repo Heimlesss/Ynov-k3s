@@ -52,6 +52,10 @@
         group: ansible
         mode: '0644'
 
+    - name: Appliquer le provisioning Grafana
+      ansible.builtin.command: kubectl apply -f /home/ansible/monitoring/grafana-provisioning.yaml
+      changed_when: true
+
     - name: Appliquer le ConfigMap Prometheus
       ansible.builtin.command: kubectl apply -f /home/ansible/monitoring/prometheus-config.yaml
       changed_when: true
@@ -70,6 +74,10 @@
 
     - name: Appliquer node-exporter
       ansible.builtin.command: kubectl apply -f /home/ansible/monitoring/node-exporter.yaml
+      changed_when: true
+
+    - name: Appliquer kube-state-metrics
+      ansible.builtin.command: kubectl apply -f /home/ansible/monitoring/kube-state-metrics.yaml
       changed_when: true
 
     - name: Attendre que Prometheus soit Ready

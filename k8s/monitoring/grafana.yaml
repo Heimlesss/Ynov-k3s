@@ -29,6 +29,23 @@ spec:
                 secretKeyRef:
                   name: grafana-credentials
                   key: password
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: dashboard-ynov
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
+        - name: dashboard-ynov
+          configMap:
+            name: grafana-dashboard-ynov
 ---
 apiVersion: v1
 kind: Service
