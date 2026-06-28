@@ -124,55 +124,55 @@ jobs:
         env:
           HARBOR_USER: ${{ secrets.HARBOR_USER }}
           HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
-        run: echo "$HARBOR_PASSWORD" | docker login llynov-k3s.duckdns.org -u "$HARBOR_USER" --password-stdin
+        run: echo "$HARBOR_PASSWORD" | docker login frhb102257flex.ikexpress.com -u "$HARBOR_USER" --password-stdin
 
       - name: Installer Cosign
         uses: sigstore/cosign-installer@v3
 
       - name: Build et push customer
         run: |
-          docker build -t llynov-k3s.duckdns.org/restaurant/customer:latest \
+          docker build -t frhb102257flex.ikexpress.com/restaurant/customer:latest \
             -f app/customer/Dockerfile app/
-          docker push llynov-k3s.duckdns.org/restaurant/customer:latest
+          docker push frhb102257flex.ikexpress.com/restaurant/customer:latest
 
       - name: Signer customer avec Cosign keyless
-        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/customer:latest
+        run: cosign sign --yes frhb102257flex.ikexpress.com/restaurant/customer:latest
 
       - name: Build et push waiter
         run: |
-          docker build -t llynov-k3s.duckdns.org/restaurant/waiter:latest \
+          docker build -t frhb102257flex.ikexpress.com/restaurant/waiter:latest \
             -f app/waiter/Dockerfile app/
-          docker push llynov-k3s.duckdns.org/restaurant/waiter:latest
+          docker push frhb102257flex.ikexpress.com/restaurant/waiter:latest
 
       - name: Signer waiter avec Cosign keyless
-        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/waiter:latest
+        run: cosign sign --yes frhb102257flex.ikexpress.com/restaurant/waiter:latest
 
       - name: Build et push kitchen
         run: |
-          docker build -t llynov-k3s.duckdns.org/restaurant/kitchen:latest \
+          docker build -t frhb102257flex.ikexpress.com/restaurant/kitchen:latest \
             -f app/kitchen/Dockerfile app/
-          docker push llynov-k3s.duckdns.org/restaurant/kitchen:latest
+          docker push frhb102257flex.ikexpress.com/restaurant/kitchen:latest
 
       - name: Signer kitchen avec Cosign keyless
-        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/kitchen:latest
+        run: cosign sign --yes frhb102257flex.ikexpress.com/restaurant/kitchen:latest
 
       - name: Build et push payment
         run: |
-          docker build -t llynov-k3s.duckdns.org/restaurant/payment:latest \
+          docker build -t frhb102257flex.ikexpress.com/restaurant/payment:latest \
             -f app/payment/Dockerfile app/
-          docker push llynov-k3s.duckdns.org/restaurant/payment:latest
+          docker push frhb102257flex.ikexpress.com/restaurant/payment:latest
 
       - name: Signer payment avec Cosign keyless
-        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/payment:latest
+        run: cosign sign --yes frhb102257flex.ikexpress.com/restaurant/payment:latest
 
       - name: Build et push reservation
         run: |
-          docker build -t llynov-k3s.duckdns.org/restaurant/reservation:latest \
+          docker build -t frhb102257flex.ikexpress.com/restaurant/reservation:latest \
             -f app/reservation/Dockerfile app/
-          docker push llynov-k3s.duckdns.org/restaurant/reservation:latest
+          docker push frhb102257flex.ikexpress.com/restaurant/reservation:latest
 
       - name: Signer reservation avec Cosign keyless
-        run: cosign sign --yes llynov-k3s.duckdns.org/restaurant/reservation:latest
+        run: cosign sign --yes frhb102257flex.ikexpress.com/restaurant/reservation:latest
 
   openscap-before:
     name: OpenSCAP AVANT hardening — VM2
