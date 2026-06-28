@@ -13,7 +13,7 @@
       "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
       "targets": [
         {
-          "expr": "cis_score{status=\"avant_hardening\"}",
+          "expr": "cis_score{instance=\"vm2-before\"}",
           "legendFormat": "Score avant"
         }
       ],
@@ -47,7 +47,7 @@
       "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
       "targets": [
         {
-          "expr": "cis_score{status=\"apres_hardening\"}",
+          "expr": "cis_score{instance=\"vm2-after\"}",
           "legendFormat": "Score après"
         }
       ],
@@ -81,7 +81,7 @@
       "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
       "targets": [
         {
-          "expr": "cis_score{status=\"apres_hardening\"} - cis_score{status=\"avant_hardening\"}",
+          "expr": "cis_score{instance=\"vm2-after\"} - cis_score{instance=\"vm2-before\"}",
           "legendFormat": "Delta"
         }
       ],
@@ -112,11 +112,11 @@
       "gridPos": { "x": 0, "y": 4, "w": 18, "h": 6 },
       "targets": [
         {
-          "expr": "cis_score{status=\"avant_hardening\"}",
+          "expr": "cis_score{instance=\"vm2-before\"}",
           "legendFormat": "Avant hardening"
         },
         {
-          "expr": "cis_score{status=\"apres_hardening\"}",
+          "expr": "cis_score{instance=\"vm2-after\"}",
           "legendFormat": "Après hardening"
         }
       ],

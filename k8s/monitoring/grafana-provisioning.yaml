@@ -49,7 +49,7 @@ data:
           "title": "Score CIS AVANT hardening",
           "type": "stat",
           "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
-          "targets": [{ "expr": "cis_score{status=\"avant_hardening\"}", "legendFormat": "Score avant" }],
+          "targets": [{ "expr": "cis_score{instance=\"vm2-before\"}", "legendFormat": "Score avant" }],
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
           "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 40 }, { "color": "yellow", "value": 60 }, { "color": "green", "value": 75 }] } } }
         },
@@ -58,7 +58,7 @@ data:
           "title": "Score CIS APRÈS hardening",
           "type": "stat",
           "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
-          "targets": [{ "expr": "cis_score{status=\"apres_hardening\"}", "legendFormat": "Score après" }],
+          "targets": [{ "expr": "cis_score{instance=\"vm2-after\"}", "legendFormat": "Score après" }],
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
           "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 40 }, { "color": "yellow", "value": 60 }, { "color": "green", "value": 75 }] } } }
         },
@@ -67,7 +67,7 @@ data:
           "title": "Amélioration CIS",
           "type": "stat",
           "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
-          "targets": [{ "expr": "cis_score{status=\"apres_hardening\"} - cis_score{status=\"avant_hardening\"}", "legendFormat": "Delta" }],
+          "targets": [{ "expr": "cis_score{instance=\"vm2-after\"} - cis_score{instance=\"vm2-before\"}", "legendFormat": "Delta" }],
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
           "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 5 }, { "color": "green", "value": 15 }] } } }
         },
@@ -77,8 +77,8 @@ data:
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 4, "w": 18, "h": 6 },
           "targets": [
-            { "expr": "cis_score{status=\"avant_hardening\"}", "legendFormat": "Avant hardening" },
-            { "expr": "cis_score{status=\"apres_hardening\"}", "legendFormat": "Après hardening" }
+            { "expr": "cis_score{instance=\"vm2-before\"}", "legendFormat": "Avant hardening" },
+            { "expr": "cis_score{instance=\"vm2-after\"}", "legendFormat": "Après hardening" }
           ],
           "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2, "fillOpacity": 10 } }, "overrides": [{ "matcher": { "id": "byName", "options": "Avant hardening" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] }, { "matcher": { "id": "byName", "options": "Après hardening" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }] }
         },

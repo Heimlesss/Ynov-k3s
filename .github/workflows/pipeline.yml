@@ -205,9 +205,9 @@ jobs:
              --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
              --results /tmp/cis-before.xml \
              ~/ssg/scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml; \
-            SCORE=\$(grep -o '"'"'[0-9]*\.[0-9]*'"'"' /tmp/cis-before.xml | head -1); \
+            SCORE=\$(grep -oP '"'"'(?<=<score[^>]*>)[0-9]+\.[0-9]+'"'"' /tmp/cis-before.xml | head -1); \
             echo \"=== Score CIS AVANT hardening : \$SCORE ===\"; \
-            echo cis_score{host=\\\"vm2\\\",status=\\\"avant_hardening\\\"} \$SCORE | \
+            printf '"'"'cis_score %s\n'"'"' \"\$SCORE\" | \
             curl --data-binary @- http://178.170.25.223:30091/metrics/job/openscap/instance/vm2-before"'
 
   deploy:
@@ -303,9 +303,9 @@ jobs:
              --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
              --results /tmp/cis-after.xml \
              ~/ssg/scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml; \
-            SCORE=\$(grep -o '"'"'[0-9]*\.[0-9]*'"'"' /tmp/cis-after.xml | head -1); \
+            SCORE=\$(grep -oP '"'"'(?<=<score[^>]*>)[0-9]+\.[0-9]+'"'"' /tmp/cis-after.xml | head -1); \
             echo \"=== Score CIS APRÈS hardening : \$SCORE ===\"; \
-            echo cis_score{host=\\\"vm2\\\",status=\\\"apres_hardening\\\"} \$SCORE | \
+            printf '"'"'cis_score %s\n'"'"' \"\$SCORE\" | \
             curl --data-binary @- http://178.170.25.223:30091/metrics/job/openscap/instance/vm2-after"'
 
   zap:
