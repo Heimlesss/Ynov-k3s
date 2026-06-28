@@ -34,6 +34,11 @@
       ansible.builtin.command: kubectl apply -f /tmp/grafana-secret.yaml
       changed_when: true
 
+    - name: Redémarrer Grafana pour prendre en compte les nouvelles credentials
+      ansible.builtin.command: kubectl rollout restart deployment/grafana -n restaurant
+      failed_when: false
+      changed_when: true
+
     - name: Supprimer le fichier secret temporaire
       ansible.builtin.file:
         path: /tmp/grafana-secret.yaml
