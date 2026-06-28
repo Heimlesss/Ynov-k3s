@@ -65,8 +65,8 @@ cis_ubuntu_auditd_max_log_file_action: "keep_logs"
 # Durcit la pile réseau du noyau contre les attaques courantes
 # ============================================================
 cis_ubuntu_sysctl_settings:
-  net.ipv4.ip_forward: 0
-  # Désactive le routage de paquets - un serveur n'est pas un routeur
+  net.ipv4.ip_forward: 1
+  # Requis par k3s/flannel pour le routage des pods
   net.ipv4.conf.all.send_redirects: 0
   # Interdit l'envoi de messages ICMP Redirect (risque MITM)
   net.ipv4.conf.default.send_redirects: 0
@@ -108,6 +108,8 @@ cis_ubuntu_ufw_default_outgoing: "allow"
 cis_ubuntu_ufw_allowed_ports:
   - 22      # SSH
   - 6443    # API k3s
+  - 30001   # Grafana NodePort
+  - 30091   # Pushgateway NodePort (OpenSCAP scores)
 
 # ============================================================
 # SECTION 10 - Politique de mots de passe
