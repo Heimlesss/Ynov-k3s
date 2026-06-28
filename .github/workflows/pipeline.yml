@@ -210,10 +210,46 @@ jobs:
             printf '"'"'cis_score %s\n'"'"' \"\$SCORE\" | \
             curl --data-binary @- http://178.170.25.223:30091/metrics/job/openscap/instance/vm2-before"'
 
+  openscap-before-vm3:
+    name: OpenSCAP AVANT hardening — VM3
+    runs-on: ubuntu-latest
+    needs: [build-and-sign]
+    steps:
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM1_SSH_KEY }}" > ~/.ssh/id_ed25519_ci
+          chmod 600 ~/.ssh/id_ed25519_ci
+          ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Installer OpenSCAP et SSG sur VM3
+        run: |
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
+          'ssh -i ~/.ssh/id_ed25519_ansible -o StrictHostKeyChecking=no \
+           ansible@${{ secrets.VM3_HOST }} \
+           "sudo apt update -y && sudo apt install -y openscap-scanner unzip && \
+            [ -f ~/ssg/scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml ] || \
+            (wget -q https://github.com/ComplianceAsCode/content/releases/download/v0.1.81/scap-security-guide-0.1.81.zip \
+             -O ~/ssg.zip && unzip -q ~/ssg.zip -d ~/ssg/)"'
+
+      - name: Scan CIS AVANT hardening VM3
+        run: |
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
+          'ssh -i ~/.ssh/id_ed25519_ansible -o StrictHostKeyChecking=no \
+           ansible@${{ secrets.VM3_HOST }} \
+           "sudo oscap xccdf eval \
+             --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
+             --results /tmp/cis-before.xml \
+             ~/ssg/scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml; \
+            SCORE=\$(grep -o '"'"'<score[^>]*>[0-9.]*'"'"' /tmp/cis-before.xml | grep -o '"'"'[0-9.]*$'"'"' | head -1); \
+            echo \"=== Score CIS AVANT hardening VM3 : \$SCORE ===\"; \
+            printf '"'"'cis_score %s\n'"'"' \"\$SCORE\" | \
+            curl --data-binary @- http://178.170.25.223:30091/metrics/job/openscap/instance/vm3-before"'
+
   deploy:
     name: Deploy via Ansible
     runs-on: ubuntu-latest
-    needs: [openscap-before]
+    needs: [openscap-before, openscap-before-vm3]
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -307,6 +343,32 @@ jobs:
             echo \"=== Score CIS APRÈS hardening : \$SCORE ===\"; \
             printf '"'"'cis_score %s\n'"'"' \"\$SCORE\" | \
             curl --data-binary @- http://178.170.25.223:30091/metrics/job/openscap/instance/vm2-after"'
+
+  openscap-after-vm3:
+    name: OpenSCAP APRÈS hardening — VM3
+    runs-on: ubuntu-latest
+    needs: [deploy, deploy-monitoring]
+    steps:
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM1_SSH_KEY }}" > ~/.ssh/id_ed25519_ci
+          chmod 600 ~/.ssh/id_ed25519_ci
+          ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Scan CIS APRÈS hardening VM3 et push score
+        run: |
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
+          'ssh -i ~/.ssh/id_ed25519_ansible -o StrictHostKeyChecking=no \
+           ansible@${{ secrets.VM3_HOST }} \
+           "sudo oscap xccdf eval \
+             --profile xccdf_org.ssgproject.content_profile_cis_level1_server \
+             --results /tmp/cis-after.xml \
+             ~/ssg/scap-security-guide-0.1.81/ssg-ubuntu2404-ds.xml; \
+            SCORE=\$(grep -o '"'"'<score[^>]*>[0-9.]*'"'"' /tmp/cis-after.xml | grep -o '"'"'[0-9.]*$'"'"' | head -1); \
+            echo \"=== Score CIS APRÈS hardening VM3 : \$SCORE ===\"; \
+            printf '"'"'cis_score %s\n'"'"' \"\$SCORE\" | \
+            curl --data-binary @- http://178.170.25.223:30091/metrics/job/openscap/instance/vm3-after"'
 
   zap:
     name: ZAP Baseline DAST

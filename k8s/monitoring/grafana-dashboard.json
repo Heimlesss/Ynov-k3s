@@ -81,7 +81,7 @@
       "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
       "targets": [
         {
-          "expr": "cis_score{instance=\"vm2-after\"} - cis_score{instance=\"vm2-before\"}",
+          "expr": "cis_score{instance=\"vm2-after\"} - ignoring(instance) cis_score{instance=\"vm2-before\"}",
           "legendFormat": "Delta"
         }
       ],

@@ -67,7 +67,10 @@ data:
           "title": "Amélioration CIS",
           "type": "stat",
           "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
-          "targets": [{ "expr": "cis_score{instance=\"vm2-after\"} - cis_score{instance=\"vm2-before\"}", "legendFormat": "Delta" }],
+          "targets": [
+            { "expr": "cis_score{instance=\"vm2-after\"} - ignoring(instance) cis_score{instance=\"vm2-before\"}", "legendFormat": "VM2 delta" },
+            { "expr": "cis_score{instance=\"vm3-after\"} - ignoring(instance) cis_score{instance=\"vm3-before\"}", "legendFormat": "VM3 delta" }
+          ],
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
           "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 5 }, { "color": "green", "value": 15 }] } } }
         },
@@ -77,8 +80,10 @@ data:
           "type": "timeseries",
           "gridPos": { "x": 0, "y": 4, "w": 18, "h": 6 },
           "targets": [
-            { "expr": "cis_score{instance=\"vm2-before\"}", "legendFormat": "Avant hardening" },
-            { "expr": "cis_score{instance=\"vm2-after\"}", "legendFormat": "Après hardening" }
+            { "expr": "cis_score{instance=\"vm2-before\"}", "legendFormat": "VM2 avant" },
+            { "expr": "cis_score{instance=\"vm2-after\"}", "legendFormat": "VM2 après" },
+            { "expr": "cis_score{instance=\"vm3-before\"}", "legendFormat": "VM3 avant" },
+            { "expr": "cis_score{instance=\"vm3-after\"}", "legendFormat": "VM3 après" }
           ],
           "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2, "fillOpacity": 10 } }, "overrides": [{ "matcher": { "id": "byName", "options": "Avant hardening" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] }, { "matcher": { "id": "byName", "options": "Après hardening" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }] }
         },
