@@ -250,12 +250,23 @@ jobs:
           ssh-keyscan ${{ secrets.VM1_HOST }} >> ~/.ssh/known_hosts
 
       - name: Déployer la stack monitoring via Ansible
+        env:
+          GRAFANA_USER: ${{ secrets.GRAFANA_USER }}
+          GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} \
-          'cd ~/Ynov-k3s && \
-           ansible-playbook playbooks/monitoring.yml \
-           --private-key ~/.ssh/id_ed25519_ansible \
-           --extra-vars "grafana_user=${{ secrets.GRAFANA_USER }} grafana_password=${{ secrets.GRAFANA_PASSWORD }}"'
+          VARS_B64=$(python3 -c "
+import json, os, base64
+data = json.dumps({'grafana_user': os.environ['GRAFANA_USER'], 'grafana_password': os.environ['GRAFANA_PASSWORD']})
+print(base64.b64encode(data.encode()).decode())
+")
+          ssh -i ~/.ssh/id_ed25519_ci ${{ secrets.VM1_USER }}@${{ secrets.VM1_HOST }} bash -s << ENDSSH
+          echo "$VARS_B64" | base64 -d > /tmp/grafana_vars.json
+          cd ~/Ynov-k3s
+          ansible-playbook playbooks/monitoring.yml \
+            --private-key ~/.ssh/id_ed25519_ansible \
+            --extra-vars @/tmp/grafana_vars.json
+          rm -f /tmp/grafana_vars.json
+          ENDSSH
 
   deploy-apps:
     name: Deploy Restaurant App
