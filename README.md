@@ -22,7 +22,7 @@ Automatiser l'intégralité du cycle de vie d'une application — du commit au d
 | Machine | IP | Rôle |
 |---|---|---|
 | VM1 | `178.170.25.222` | Nœud k3s (master), contrôleur Ansible |
-| VM2 | `178.170.25.222` | Cible de durcissement CIS et scans OpenSCAP |
+| VM2 | `178.170.25.223` | Cible de durcissement CIS et scans OpenSCAP |
 | VM3 | `178.170.25.242` | Cible de durcissement CIS et scans OpenSCAP |
 | Harbor | `frhb102257flex.ikexpress.com` | Registry privé pour les images signées |
 
